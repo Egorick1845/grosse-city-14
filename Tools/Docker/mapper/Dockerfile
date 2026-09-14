@@ -5,6 +5,9 @@ WORKDIR /src
 
 COPY . .
 
+# Mapping image only: restart/shutdown need +HOST (LOGIN_HOST_USER), not +SERVER.
+COPY Tools/Docker/mapper/engineCommandPerms.yml Resources/engineCommandPerms.yml
+
 RUN dotnet build Content.Packaging --configuration Release \
  && dotnet run --project Content.Packaging --no-build --configuration Release -- \
       server --hybrid-acz --platform linux-x64

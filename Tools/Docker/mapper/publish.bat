@@ -14,6 +14,7 @@ echo Building %IMAGE%
 echo   fork_id=grosse
 echo   version=%CONTENT_VERSION%
 echo   engine_version=%ENGINE_VERSION%
+echo   note: mapper engineCommandPerms moves restart/shutdown to +HOST
 
 docker build -f Tools/Docker/mapper/Dockerfile ^
   --build-arg CONTENT_VERSION=%CONTENT_VERSION% ^
