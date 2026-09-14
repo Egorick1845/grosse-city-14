@@ -25,6 +25,10 @@ public sealed partial class MovementSoundSystem : EntitySystem
         if (!_timing.IsFirstTimePredicted)
             return;
 
+        // Custom movers (vehicles) play their own loops from speed, not WASD edges.
+        if (HasComp<SkipMobMovementComponent>(ent.Owner))
+            return;
+
         var oldMoving = (SharedMoverController.GetNormalizedMovement(args.OldMovement) & MoveButtons.AnyDirection) != MoveButtons.None;
         var moving = (SharedMoverController.GetNormalizedMovement(args.Entity.Comp.HeldMoveButtons) & MoveButtons.AnyDirection) != MoveButtons.None;
 

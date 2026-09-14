@@ -13,6 +13,7 @@ verb-categories-debug = Дебаг
 verb-categories-examine = Осмотреть
 verb-categories-eject = Извлечь
 verb-categories-insert = Вставить
+verb-categories-enter = Войти
 verb-categories-buckle = Пристегнуть
 verb-categories-unbuckle = Отстегнуть
 verb-categories-rotate = Повернуть

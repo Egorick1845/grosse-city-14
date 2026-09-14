@@ -1,0 +1,14 @@
+- type: entity
+  parent: BaseAction
+  id: ActionGrosseCarExit
+  name: Exit vehicle
+  description: Get out of the vehicle.
+  components:
+  - type: Action
+    itemIconStyle: NoItem
+    checkCanInteract: false
+    icon:
+      sprite: Interface/Actions/actions_mecha.rsi
+      state: mech_eject
+  - type: InstantAction
+    event: !type:GrosseCarExitEvent

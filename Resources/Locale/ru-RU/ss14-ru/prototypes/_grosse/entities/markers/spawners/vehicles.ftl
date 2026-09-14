@@ -4,3 +4,6 @@ ent-SpawnerVehicleMoskvich17 = спавнер машины
 ent-SpawnerVehicleZIL17 = спавнер грузовика
     .desc = { ent-SpawnerVehicleMoskvich17.desc }
     .suffix = { ent-SpawnerVehicleMoskvich17.suffix }
+ent-SpawnerVehicleKraz17 = спавнер КрАЗа
+    .desc = { ent-SpawnerVehicleMoskvich17.desc }
+    .suffix = { ent-SpawnerVehicleMoskvich17.suffix }
