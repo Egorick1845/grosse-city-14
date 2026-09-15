@@ -55,6 +55,10 @@
       path: /Audio/_Grosse/Vehicles/tire_squeal.ogg
       params:
         loop: true
+    hitSound:
+      collection: GrosseCarHit
+    wallImpactSound:
+      collection: GrosseCarWall
     hitDamage:
       types:
         Blunt: 15
@@ -90,6 +94,7 @@
       params:
         loop: true
   - type: UnpoweredFlashlight
+    toggleAction: ActionGrosseCarToggleLight
   - type: PointLight
     enabled: false
     mask: /Textures/Effects/LightMasks/cone.png
@@ -97,6 +102,25 @@
     radius: 16
     energy: 4
     netsync: true
+  - type: AmbientMusicMarkerGrosseCar
+  - type: Instrument
+    allowPercussion: false
+    handheld: false
+    program: 2
+    bank: 100 # Defined in space-station-14.sf2
+  - type: ActivatableUI
+    key: enum.InstrumentUiKey.Key
+    singleUser: true
+    verbOnly: true
+    inHandsOnly: false
+    requiresComplex: false
+    blockSpectators: true
+    verbText: verb-instrument-openui
+  - type: UserInterface
+    interfaces:
+      enum.InstrumentUiKey.Key:
+        type: InstrumentBoundUserInterface
+        requireInputValidation: false
   - type: Repairable
     fuelCost: 25
     doAfterDelay: 4

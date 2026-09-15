@@ -121,6 +121,24 @@ public sealed partial class GrosseCarComponent : Component
     [DataField]
     public SoundSpecifier? ImpactSound = new SoundCollectionSpecifier("MetalThud");
 
+    /// <summary>
+    /// Played when the car rams and tosses an Injurable (mobs, props).
+    /// </summary>
+    [DataField]
+    public SoundSpecifier? HitSound = new SoundCollectionSpecifier("GrosseCarHit");
+
+    /// <summary>
+    /// Played when the car hits a wall or other Impassable geometry.
+    /// </summary>
+    [DataField]
+    public SoundSpecifier? WallImpactSound = new SoundCollectionSpecifier("GrosseCarWall");
+
+    [DataField]
+    public EntProtoId RadioAction = "ActionGrosseCarPlayMidi";
+
+    [DataField, AutoNetworkedField]
+    public EntityUid? RadioActionEntity;
+
     [AutoNetworkedField]
     public bool Handbrake;
 

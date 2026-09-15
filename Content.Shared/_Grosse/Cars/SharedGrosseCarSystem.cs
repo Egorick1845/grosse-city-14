@@ -5,6 +5,7 @@ using Content.Shared.DoAfter;
 using Content.Shared.DragDrop;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Input;
+using Content.Shared.Instruments;
 using Content.Shared.Inventory.VirtualItem;
 using Content.Shared.Light;
 using Content.Shared.Light.Components;
@@ -13,6 +14,7 @@ using Content.Shared.Movement.Components;
 using Content.Shared.Movement.Events;
 using Content.Shared.Movement.Systems;
 using Content.Shared.Popups;
+using Content.Shared.UserInterface;
 using Content.Shared.Verbs;
 using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
@@ -32,10 +34,13 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
     [Dependency] private IGameTiming _timing = default!;
     [Dependency] private INetManager _net = default!;
     [Dependency] private ActionBlockerSystem _blocker = default!;
+    [Dependency] private ActionContainerSystem _actionContainer = default!;
+    [Dependency] private ActivatableUISystem _activatableUi = default!;
     [Dependency] private SharedActionsSystem _actions = default!;
     [Dependency] private SharedAppearanceSystem _appearance = default!;
     [Dependency] private SharedAudioSystem _audio = default!;
     [Dependency] private SharedContainerSystem _container = default!;
+    [Dependency] private SharedUserInterfaceSystem _ui = default!;
     [Dependency] private SharedDoAfterSystem _doAfter = default!;
     [Dependency] private SharedHandsSystem _hands = default!;
     [Dependency] private SharedMoverController _mover = default!;
@@ -49,6 +54,7 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
         InitializeCollision();
 
         SubscribeLocalEvent<GrosseCarComponent, ComponentStartup>(OnStartup);
+        SubscribeLocalEvent<GrosseCarComponent, MapInitEvent>(OnMapInit);
         SubscribeLocalEvent<GrosseCarComponent, ComponentShutdown>(OnCarShutdown);
         SubscribeLocalEvent<GrosseCarComponent, GetVerbsEvent<InteractionVerb>>(OnInteractionVerbs);
         SubscribeLocalEvent<GrosseCarComponent, GetVerbsEvent<AlternativeVerb>>(OnAlternativeVerbs);
@@ -56,6 +62,8 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
         SubscribeLocalEvent<GrosseCarComponent, GrosseCarEnterDoAfterEvent>(OnEnterDoAfter);
         SubscribeLocalEvent<GrosseCarComponent, GrosseCarEjectDoAfterEvent>(OnEjectDoAfter);
         SubscribeLocalEvent<GrosseCarComponent, GrosseCarExitEvent>(OnExitAction);
+        SubscribeLocalEvent<GrosseCarComponent, BoundUIOpenedEvent>(OnBoundUiOpened);
+        SubscribeLocalEvent<GrosseCarComponent, ActivatableUIOpenAttemptEvent>(OnInstrumentOpenAttempt);
         SubscribeLocalEvent<GrosseCarComponent, EntInsertedIntoContainerMessage>(OnInserted);
         SubscribeLocalEvent<GrosseCarComponent, EntRemovedFromContainerMessage>(OnRemoved);
         SubscribeLocalEvent<GrosseCarComponent, CanDropTargetEvent>(OnCanDrop);
@@ -95,10 +103,16 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
         _appearance.SetData(ent.Owner, GrosseCarVisuals.Run, false);
     }
 
+    private void OnMapInit(Entity<GrosseCarComponent> ent, ref MapInitEvent args)
+    {
+        _actionContainer.EnsureAction(ent.Owner, ref ent.Comp.RadioActionEntity, ent.Comp.RadioAction);
+    }
+
     private void OnCarShutdown(Entity<GrosseCarComponent> ent, ref ComponentShutdown args)
     {
         ent.Comp.EngineSoundEntity = _audio.Stop(ent.Comp.EngineSoundEntity);
         ent.Comp.DriftSoundEntity = _audio.Stop(ent.Comp.DriftSoundEntity);
+        _ui.CloseUi(ent.Owner, InstrumentUiKey.Key);
     }
 
     private void OnInteractionVerbs(Entity<GrosseCarComponent> ent, ref GetVerbsEvent<InteractionVerb> args)
@@ -200,6 +214,21 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
             return;
 
         args.Handled = TryEject(ent, args.Performer, args.Performer, skipDelay: true);
+    }
+
+    private void OnBoundUiOpened(Entity<GrosseCarComponent> ent, ref BoundUIOpenedEvent args)
+    {
+        if (!Equals(args.UiKey, InstrumentUiKey.Key))
+            return;
+
+        if (TryComp<ActivatableUIComponent>(ent.Owner, out var aui))
+            _activatableUi.SetCurrentSingleUser(ent.Owner, args.Actor, aui);
+    }
+
+    private void OnInstrumentOpenAttempt(Entity<GrosseCarComponent> ent, ref ActivatableUIOpenAttemptEvent args)
+    {
+        if (!TryGetDriver(ent, out var driver) || driver != args.User)
+            args.Cancel();
     }
 
     private void OnInserted(Entity<GrosseCarComponent> ent, ref EntInsertedIntoContainerMessage args)
@@ -425,6 +454,9 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
         {
             _actions.GrantContainedAction(occupant, car.Owner, flashlight);
         }
+
+        if (slot.IsDriver && car.Comp.RadioActionEntity is { } radio)
+            _actions.GrantContainedAction(occupant, car.Owner, radio);
     }
 
     private void CleanupOccupant(Entity<GrosseCarComponent> car, EntityUid occupant, GrosseCarSlot slot)
@@ -433,6 +465,7 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
         {
             RemComp<RelayInputMoverComponent>(occupant);
             _virtual.DeleteInHandsMatching(occupant, car.Owner);
+            _ui.CloseUi(car.Owner, InstrumentUiKey.Key, occupant);
         }
 
         RemComp<GrosseCarRiderComponent>(occupant);

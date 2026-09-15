@@ -248,7 +248,8 @@ public sealed partial class ActionUIController : UIController, IOnStateChanged<G
 
     private void OnActionAdded(EntityUid actionId)
     {
-        if (_actionsSystem?.GetAction(actionId) is not {} action)
+        if (_actionsSystem is not { } actionsSystem ||
+            actionsSystem.GetAction(actionId) is not { } action)
             return;
 
         // TODO: event
@@ -259,7 +260,21 @@ public sealed partial class ActionUIController : UIController, IOnStateChanged<G
         if (_actions.Contains(action))
             return;
 
-        _actions.Add(action);
+        var insertAt = _actions.Count;
+        for (var i = 0; i < _actions.Count; i++)
+        {
+            if (_actions[i] is not { } existingId ||
+                actionsSystem.GetAction(existingId) is not { } existing)
+                continue;
+
+            if (ActionComparer(action, existing) < 0)
+            {
+                insertAt = i;
+                break;
+            }
+        }
+
+        _actions.Insert(insertAt, action);
     }
 
     private void OnActionRemoved(EntityUid actionId)

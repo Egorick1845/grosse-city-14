@@ -2,3 +2,18 @@
   license: "CC-BY-3.0"
   copyright: "audible-edge (Tom Haigh), submitted by qubodup. Converted from WAV to OGG."
   source: "https://opengameart.org/content/car-tire-squeal-skid-loop"
+
+- files:
+  - ram_hit_0.ogg
+  - ram_hit_1.ogg
+  - ram_hit_2.ogg
+  - ram_hit_3.ogg
+  - ram_hit_4.ogg
+  - wall_crash_0.ogg
+  - wall_crash_1.ogg
+  - wall_crash_2.ogg
+  - wall_crash_3.ogg
+  - wall_crash_4.ogg
+  license: "CC0-1.0"
+  copyright: "Kenney (www.kenney.nl), Impact Sounds pack (impactPunch_heavy / impactPlate_heavy). Converted to mono OGG."
+  source: "https://kenney.nl/assets/impact-sounds"

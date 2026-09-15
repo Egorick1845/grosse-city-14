@@ -9,3 +9,6 @@ grosse-car-eject-others = Pulling {$target} out of the cabin!
 
 grosse-car-action-exit-name = Exit vehicle
 grosse-car-action-exit-desc = Get out of the vehicle.
+
+grosse-car-action-radio-name = Play MIDI
+grosse-car-action-radio-desc = Open the cabin MIDI player.

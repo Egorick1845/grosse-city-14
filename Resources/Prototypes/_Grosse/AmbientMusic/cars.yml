@@ -1,0 +1,20 @@
+- type: ambientMusic
+  id: GrosseCar
+  sound:
+    params:
+      volume: -12
+    collection: AmbienceGrosseCar
+  rules: NearGrosseCar
+  fadeIn: true
+  interruptable: true
+  repeat: true
+  priority: 4
+
+- type: rules
+  id: NearGrosseCar
+  rules:
+  - !type:NearbyComponentsRule
+    components:
+    - type: AmbientMusicMarkerGrosseCar
+    count: 1
+    range: 4

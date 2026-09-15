@@ -32,6 +32,13 @@ public sealed partial class AmbientMusicPrototype : IPrototype
     [ViewVariables(VVAccess.ReadWrite), DataField("fadeIn")]
     public bool FadeIn;
 
+    /// <summary>
+    /// If true, keep playing this prototype without the usual ambience cooldown
+    /// and allow the same prototype to start again (shuffle to the next track).
+    /// </summary>
+    [ViewVariables(VVAccess.ReadWrite), DataField]
+    public bool Repeat;
+
     [ViewVariables(VVAccess.ReadWrite), DataField("sound", required: true)]
     public SoundSpecifier Sound = default!;
 

@@ -6,8 +6,10 @@ using Content.Shared.Effects;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Physics;
 using Content.Shared.Stunnable;
+using Content.Shared.Throwing;
 using Robust.Shared.Audio;
 using Robust.Shared.Map.Components;
+using Robust.Shared.Physics;
 using Robust.Shared.Physics.Components;
 using Robust.Shared.Physics.Events;
 using Robust.Shared.Physics.Systems;
@@ -21,6 +23,7 @@ public sealed partial class SharedGrosseCarSystem
     [Dependency] private SharedColorFlashEffectSystem _color = default!;
     [Dependency] private SharedPhysicsSystem _physics = default!;
     [Dependency] private SharedStunSystem _stun = default!;
+    [Dependency] private ThrowingSystem _throwing = default!;
 
     [Dependency] private EntityQuery<DamageableComponent> _damageableQuery = default!;
     [Dependency] private EntityQuery<GrosseCarRiderComponent> _riderQuery = default!;
@@ -105,21 +108,18 @@ public sealed partial class SharedGrosseCarSystem
 
         if (_net.IsServer)
         {
-            var push = dir * (mCar / (mCar + mOther) * relSpeed * ent.Comp.PushMultiplier);
-            _physics.SetLinearVelocity(other, otherBody.LinearVelocity + push);
+            TossTarget(other, dir, relSpeed, ent.Comp.PushMultiplier);
 
             if (relSpeed >= ent.Comp.MinImpactSpeed)
             {
                 var scale = relSpeed / ent.Comp.MinImpactSpeed;
                 ApplyCarDamage(ent, ent.Comp.SelfDamage * scale);
                 _damageable.TryChangeDamage(other, ent.Comp.HitDamage * scale);
-
-                if (relSpeed >= ent.Comp.MinImpactSpeed * 1.5f)
-                    _stun.TryKnockdown(other, ent.Comp.KnockdownTime, force: true);
+                _stun.TryKnockdown(other, ent.Comp.KnockdownTime, force: true);
             }
         }
 
-        PlayImpact(ent);
+        PlayImpact(ent, ent.Comp.HitSound);
     }
 
     private void HandleWall(Entity<GrosseCarComponent> ent, Vector2 dir, float relSpeed, float mCar)
@@ -132,7 +132,7 @@ public sealed partial class SharedGrosseCarSystem
             ApplyCarDamage(ent, ent.Comp.WallDamage * scale);
         }
 
-        PlayImpact(ent);
+        PlayImpact(ent, ent.Comp.WallImpactSound);
     }
 
     private void HandleRammable(
@@ -151,9 +151,39 @@ public sealed partial class SharedGrosseCarSystem
             var scale = relSpeed / Math.Max(ent.Comp.RamMinSpeed, 0.01f);
             _damageable.TryChangeDamage(other, ent.Comp.HitDamage * scale);
             ApplyCarDamage(ent, ent.Comp.SelfDamage * 0.5f * scale);
+
+            if (_injurableQuery.HasComp(other))
+                TossTarget(other, dir, relSpeed, ent.Comp.PushMultiplier);
         }
 
-        PlayImpact(ent);
+        PlayImpact(ent, _injurableQuery.HasComp(other) ? ent.Comp.HitSound : ent.Comp.ImpactSound);
+    }
+
+    private void TossTarget(EntityUid other, Vector2 dir, float relSpeed, float pushMultiplier)
+    {
+        if (!_physicsQuery.TryComp(other, out var physics))
+            return;
+
+        _transform.Unanchor(other);
+        if ((physics.BodyType & (BodyType.Dynamic | BodyType.KinematicController)) == 0)
+            _physics.SetBodyType(other, BodyType.Dynamic, body: physics);
+
+        var speed = Math.Max(relSpeed * pushMultiplier, 5f);
+        _throwing.TryThrow(
+            other,
+            dir * speed,
+            physics,
+            Transform(other),
+            speed,
+            recoil: false,
+            playSound: false,
+            doSpin: false,
+            unanchor: ThrowingUnanchorStrength.All);
+
+        // KinematicController bodies have InvMass 0, so TryThrow's impulse does nothing.
+        _physics.SetLinearVelocity(other, dir * speed, body: physics);
+        _physics.SetBodyStatus(other, physics, BodyStatus.InAir);
+        _physics.WakeBody(other);
     }
 
     private void SlowCar(Entity<GrosseCarComponent> ent, Vector2 dir, float relSpeed, float mCar, float mOther)
@@ -194,14 +224,14 @@ public sealed partial class SharedGrosseCarSystem
         }
     }
 
-    private void PlayImpact(Entity<GrosseCarComponent> ent)
+    private void PlayImpact(Entity<GrosseCarComponent> ent, SoundSpecifier? sound)
     {
         if (!_timing.IsFirstTimePredicted)
             return;
 
-        if (ent.Comp.ImpactSound != null)
+        if (sound != null)
         {
-            _audio.PlayPredicted(ent.Comp.ImpactSound, ent.Owner, null,
+            _audio.PlayPredicted(sound, ent.Owner, null,
                 AudioParams.Default.WithVariation(0.125f).WithVolume(-0.125f));
         }
 
