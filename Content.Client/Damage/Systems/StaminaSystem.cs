@@ -15,7 +15,8 @@ public sealed partial class StaminaSystem : SharedStaminaSystem
     [Dependency] private SpriteSystem _sprite = default!;
     [Dependency] private StunSystem _stun = default!; // Clientside Stun System
 
-    private const string StaminaAnimationKey = "stamina";
+    // Public so Z-level height visuals can restart the stamina animation (CrystallEdge guide).
+    public const string StaminaAnimationKey = "stamina";
 
     public override void Initialize()
     {

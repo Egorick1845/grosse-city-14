@@ -25,6 +25,7 @@
       collection: MetalThud
   - type: CollisionWake
   - type: GravityAffected
+  - type: GrosseZPhysics
   - type: Physics
     bodyType: Dynamic
     fixedRotation: false

@@ -10,6 +10,7 @@
   - type: GravityAffected
   - type: Physics
     bodyType: Static
+  - type: GrosseZPhysics
   - type: Fixtures
     fixtures:
       fix1:

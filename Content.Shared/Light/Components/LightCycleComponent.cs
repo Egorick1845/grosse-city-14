@@ -26,9 +26,10 @@ public sealed partial class LightCycleComponent : Component
 
     /// <summary>
     /// Should the offset be randomised upon MapInit.
+    /// Disabled by default so stacked Z-level maps share a synchronized day/night phase.
     /// </summary>
     [DataField, AutoNetworkedField]
-    public bool InitialOffset = true;
+    public bool InitialOffset = false;
 
     /// <summary>
     /// Trench of the oscillation.
