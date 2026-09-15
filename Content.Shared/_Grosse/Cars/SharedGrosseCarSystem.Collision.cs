@@ -47,6 +47,11 @@ public sealed partial class SharedGrosseCarSystem
         if (now - ent.Comp.LastImpact < ent.Comp.ImpactCooldown)
             return;
 
+        // Sprint is 4.5 and minImpactSpeed is 4. Relative speed would treat walking into a parked truck as a ram.
+        var carSpeed = args.OurBody.LinearVelocity.Length();
+        if (carSpeed < ent.Comp.MinImpactSpeed)
+            return;
+
         var relVel = args.OurBody.LinearVelocity - args.OtherBody.LinearVelocity;
         var relSpeed = relVel.Length();
         if (relSpeed < 0.15f)

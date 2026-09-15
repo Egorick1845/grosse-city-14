@@ -30,10 +30,10 @@ public sealed partial class GrosseCarComponent : Component
     public float MaxDriveDamage = 200f;
 
     [DataField]
-    public float EngineForce = 4000f;
+    public float EngineForce = 100000f;
 
     [DataField]
-    public float BrakeForce = 6000f;
+    public float BrakeForce = 150000f;
 
     [DataField]
     public float Friction = 1.5f;
@@ -57,13 +57,15 @@ public sealed partial class GrosseCarComponent : Component
     public float HandbrakeGrip = 0.6f;
 
     [DataField]
-    public float HandbrakeForce = 5000f;
+    public float HandbrakeForce = 120000f;
 
     /// <summary>
-    /// South-facing RSI locked with overrideDirection: add this to heading so the nose matches entity forward.
+    /// Extra rotation from the entity transform to the sprite's rest pose.
+    /// World rotation 0 is South; the KrAZ south frame already points that way, so leave at 0.
+    /// Use 90° only if the locked RSI frame faces East at identity.
     /// </summary>
     [DataField]
-    public Angle VisualRotationOffset = Angle.FromDegrees(90);
+    public Angle VisualRotationOffset = Angle.Zero;
 
     [DataField]
     public float MinImpactSpeed = 4f;

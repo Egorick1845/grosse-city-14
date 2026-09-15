@@ -13,6 +13,8 @@ public sealed partial class SharedGrosseCarController : VirtualController
     [Dependency] private DamageableSystem _damageable = default!;
     [Dependency] private SharedMoverController _mover = default!;
 
+    [Dependency] private EntityQuery<MovementRelayTargetComponent> _relayTarget = default!;
+
     public override void Initialize()
     {
         UpdatesAfter.Add(typeof(SharedMoverController));
@@ -30,7 +32,13 @@ public sealed partial class SharedGrosseCarController : VirtualController
             if (prediction && !physics.Predict)
                 continue;
 
-            Step(uid, car, physics, xform, mover, frameTime);
+            var driven = _relayTarget.HasComp(uid);
+            var moving = physics.LinearVelocity.LengthSquared() > 0.0001f;
+            // Parked empty cars stay idle. After the driver leaves, keep stepping while there is leftover speed so the truck can coast.
+            if (!driven && !moving)
+                continue;
+
+            Step(uid, car, physics, xform, mover, frameTime, driven);
         }
     }
 
@@ -40,9 +48,12 @@ public sealed partial class SharedGrosseCarController : VirtualController
         PhysicsComponent physics,
         TransformComponent xform,
         InputMoverComponent mover,
-        float frameTime)
+        float frameTime,
+        bool driven)
     {
-        var buttons = SharedMoverController.GetNormalizedMovement(mover.HeldMoveButtons);
+        var buttons = driven
+            ? SharedMoverController.GetNormalizedMovement(mover.HeldMoveButtons)
+            : MoveButtons.None;
         var throttle = (buttons & MoveButtons.Up) != 0;
         var reverseOrBrake = (buttons & MoveButtons.Down) != 0;
         var steerLeft = (buttons & MoveButtons.Left) != 0;
@@ -118,7 +129,11 @@ public sealed partial class SharedGrosseCarController : VirtualController
         }
 
         PhysicsSystem.SetLinearVelocity(uid, velocity);
-        TransformSystem.SetWorldRotation(uid, heading + car.VisualRotationOffset);
+        PhysicsSystem.SetAngularVelocity(uid, 0f);
+
+        var targetRot = heading + car.VisualRotationOffset;
+        if (!targetRot.EqualsApprox(TransformSystem.GetWorldRotation(xform), 0.001))
+            TransformSystem.SetWorldRotation(uid, targetRot);
 
         if (velocity.LengthSquared() > 0.0001f)
             PhysicsSystem.WakeBody(uid);

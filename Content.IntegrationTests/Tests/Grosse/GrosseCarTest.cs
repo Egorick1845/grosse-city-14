@@ -9,7 +9,9 @@ using Robust.Shared.Containers;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Localization;
 using Robust.Shared.Physics;
+using Robust.Shared.Physics.Collision.Shapes;
 using Robust.Shared.Physics.Components;
+using Robust.Shared.Physics.Dynamics;
 using Robust.Shared.Prototypes;
 
 namespace Content.IntegrationTests.Tests.Grosse;
@@ -78,7 +80,13 @@ public sealed class GrosseCarTest : GameTest
                     Assert.That(proto.HasComponent<InputMoverComponent>(factory), $"{proto.ID} missing InputMover");
                     Assert.That(proto.HasComponent<AppearanceComponent>(factory), $"{proto.ID} missing Appearance");
                     Assert.That(proto.TryGetComponent(out PhysicsComponent? physics, factory), $"{proto.ID} missing Physics");
-                    Assert.That(physics!.BodyType, Is.EqualTo(BodyType.KinematicController), $"{proto.ID} must be KinematicController");
+                    Assert.That(physics!.BodyType, Is.EqualTo(BodyType.Dynamic), $"{proto.ID} must be Dynamic so it collides with walking mobs");
+                    Assert.That(proto.TryGetComponent(out FixturesComponent? fixtures, factory), $"{proto.ID} missing Fixtures");
+                    foreach (var fixture in fixtures!.Fixtures.Values)
+                    {
+                        if (fixture.Shape is PhysShapeAabb aabb)
+                            Assert.That(aabb.LocalBounds.Width, Is.LessThan(2.2f), $"{proto.ID} hitbox is wider than the south-facing sprite");
+                    }
                     Assert.That(proto.TryGetComponent(out ContainerManagerComponent? containers, factory), $"{proto.ID} missing ContainerContainer");
 
                     foreach (var slot in car.Slots)
@@ -183,6 +191,31 @@ public sealed class GrosseCarTest : GameTest
                 Assert.That(mover.GetEffectiveMover(driver), Is.EqualTo(driver));
                 Assert.That(entityManager.GetComponent<InputMoverComponent>(driver).CanMove, Is.True);
             });
+        });
+    }
+
+    [Test]
+    public async Task ParkedCarStaysIdleWithoutDriver()
+    {
+        var pair = Pair;
+        var server = pair.Server;
+        var map = await pair.CreateTestMap();
+        var coords = map.GridCoords;
+        var entityManager = server.EntMan;
+        EntityUid car = default;
+
+        await server.WaitAssertion(() =>
+        {
+            car = entityManager.SpawnEntity("VehicleKraz17", coords);
+            Assert.That(entityManager.HasComponent<MovementRelayTargetComponent>(car), Is.False);
+        });
+
+        await server.WaitRunTicks(10);
+
+        await server.WaitAssertion(() =>
+        {
+            var physics = entityManager.GetComponent<PhysicsComponent>(car);
+            Assert.That(physics.LinearVelocity.Length(), Is.LessThan(0.01f), "empty parked car must not be stepped as if driven");
         });
     }
 }
