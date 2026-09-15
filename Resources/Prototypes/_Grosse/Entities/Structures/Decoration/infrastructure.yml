@@ -16,9 +16,6 @@
       behaviors:
       - !type:DoActsBehavior
         acts: [ "Destruction" ]
-  - type: GrosseCarRammable
-    ramMinSpeed: 3
-    massOverride: 600
   - type: Sprite
     noRot: true
     sprite: _Grosse/rsi/hlstaff/misc/greenlight.rsi
@@ -83,9 +80,6 @@
       behaviors:
       - !type:DoActsBehavior
         acts: [ "Destruction" ]
-  - type: GrosseCarRammable
-    ramMinSpeed: 3
-    massOverride: 600
   - type: Sprite
     sprite: _Grosse/rsi/hlstaff/structure/decor.rsi
     offset: "0.45, -0.2"

@@ -68,7 +68,7 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
         SubscribeLocalEvent<GrosseCarRiderComponent, ComponentShutdown>(OnRiderShutdown);
 
         CommandBinds.Builder
-            .Bind(ContentKeyFunctions.ShuttleBrake, InputCmdHandler.FromDelegate(OnHandbrakeDown, OnHandbrakeUp, handle: false, outsidePrediction: false))
+            .Bind(ContentKeyFunctions.ShuttleBrake, InputCmdHandler.FromDelegate(OnHandbrakeDown, OnHandbrakeUp, handle: false, outsidePrediction: true))
             .Register<SharedGrosseCarSystem>();
     }
 
@@ -80,6 +80,7 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
 
     public override void Update(float frameTime)
     {
+        UpdateMotionVisuals();
         UpdateAudio();
     }
 
@@ -89,6 +90,9 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
         {
             _container.EnsureContainer<ContainerSlot>(ent.Owner, slot.ContainerId);
         }
+
+        _appearance.SetData(ent.Owner, GrosseCarVisuals.Idle, true);
+        _appearance.SetData(ent.Owner, GrosseCarVisuals.Run, false);
     }
 
     private void OnCarShutdown(Entity<GrosseCarComponent> ent, ref ComponentShutdown args)
@@ -526,6 +530,21 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
         return false;
     }
 
+    private void UpdateMotionVisuals()
+    {
+        var query = EntityQueryEnumerator<GrosseCarComponent, PhysicsComponent, AppearanceComponent>();
+        while (query.MoveNext(out var uid, out var car, out var physics, out _))
+        {
+            var running = physics.LinearVelocity.LengthSquared() >= 0.0225f;
+            if (car.VisualRunning == running)
+                continue;
+
+            car.VisualRunning = running;
+            _appearance.SetData(uid, GrosseCarVisuals.Idle, !running);
+            _appearance.SetData(uid, GrosseCarVisuals.Run, running);
+        }
+    }
+
     private void UpdateAudio()
     {
         if (!_timing.IsFirstTimePredicted)
@@ -547,10 +566,13 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
 
             if (car.DriftSound != null)
             {
+                EntityUid? listener = TryGetDriver((uid, car), out var driver) ? driver : uid;
                 if (car.IsDrifting && car.DriftSoundEntity == null)
                 {
-                    var volume = Math.Clamp(car.DriftSlip * 6f - 8f, -12f, 2f);
-                    car.DriftSoundEntity = _audio.PlayPredicted(car.DriftSound, uid, uid, AudioParams.Default.WithVolume(volume).WithLoop(true))?.Entity;
+                    var volume = Math.Clamp(car.DriftSlip * 6f - 4f, -8f, 2f);
+                    if (car.Handbrake)
+                        volume = Math.Max(volume, -4f);
+                    car.DriftSoundEntity = _audio.PlayPredicted(car.DriftSound, uid, listener, AudioParams.Default.WithVolume(volume).WithLoop(true))?.Entity;
                 }
                 else if (!car.IsDrifting && car.DriftSoundEntity != null)
                 {

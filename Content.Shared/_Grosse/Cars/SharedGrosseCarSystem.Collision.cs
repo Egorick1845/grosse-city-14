@@ -1,5 +1,6 @@
 using System.Numerics;
 using Content.Shared.Damage;
+using Content.Shared.Damage.Components;
 using Content.Shared.Damage.Systems;
 using Content.Shared.Effects;
 using Content.Shared.Mobs.Components;
@@ -21,6 +22,13 @@ public sealed partial class SharedGrosseCarSystem
     [Dependency] private SharedPhysicsSystem _physics = default!;
     [Dependency] private SharedStunSystem _stun = default!;
 
+    [Dependency] private EntityQuery<DamageableComponent> _damageableQuery = default!;
+    [Dependency] private EntityQuery<GrosseCarRiderComponent> _riderQuery = default!;
+    [Dependency] private EntityQuery<InjurableComponent> _injurableQuery = default!;
+    [Dependency] private EntityQuery<MapGridComponent> _mapGridQuery = default!;
+    [Dependency] private EntityQuery<MobStateComponent> _mobStateQuery = default!;
+    [Dependency] private EntityQuery<PhysicsComponent> _physicsQuery = default!;
+
     private void InitializeCollision()
     {
         SubscribeLocalEvent<GrosseCarComponent, StartCollideEvent>(OnStartCollide);
@@ -37,10 +45,7 @@ public sealed partial class SharedGrosseCarSystem
         if (args.OtherEntity == ent.Owner)
             return;
 
-        if (HasComp<MapGridComponent>(args.OtherEntity))
-            return;
-
-        if (TryComp<GrosseCarRiderComponent>(args.OtherEntity, out var rider) && rider.Car == ent.Owner)
+        if (_riderQuery.TryComp(args.OtherEntity, out var rider) && rider.Car == ent.Owner)
             return;
 
         var now = _timing.CurTime;
@@ -49,7 +54,7 @@ public sealed partial class SharedGrosseCarSystem
 
         // Sprint is 4.5 and minImpactSpeed is 4. Relative speed would treat walking into a parked truck as a ram.
         var carSpeed = args.OurBody.LinearVelocity.Length();
-        if (carSpeed < ent.Comp.MinImpactSpeed)
+        if (carSpeed < 0.15f)
             return;
 
         var relVel = args.OurBody.LinearVelocity - args.OtherBody.LinearVelocity;
@@ -60,19 +65,30 @@ public sealed partial class SharedGrosseCarSystem
         var dir = relVel / relSpeed;
         var mCar = Math.Max(args.OurBody.FixturesMass, 1f);
 
-        if (TryComp<GrosseCarRammableComponent>(args.OtherEntity, out var rammable))
+        if (_mapGridQuery.HasComp(args.OtherEntity))
         {
-            HandleRammable(ent, args.OtherEntity, dir, relSpeed, mCar, rammable);
+            if (carSpeed >= ent.Comp.MinImpactSpeed)
+                HandleWall(ent, dir, relSpeed, mCar);
             return;
         }
 
-        if (HasComp<MobStateComponent>(args.OtherEntity))
+        if (_injurableQuery.HasComp(args.OtherEntity) || _damageableQuery.HasComp(args.OtherEntity))
         {
-            HandleMob(ent, args.OtherEntity, args.OtherBody, dir, relSpeed, mCar);
+            if (_mobStateQuery.HasComp(args.OtherEntity))
+            {
+                if (carSpeed >= ent.Comp.MinImpactSpeed)
+                    HandleMob(ent, args.OtherEntity, args.OtherBody, dir, relSpeed, mCar);
+            }
+            else if (carSpeed >= ent.Comp.RamMinSpeed)
+            {
+                HandleRammable(ent, args.OtherEntity, args.OtherBody, dir, relSpeed, mCar);
+            }
+
             return;
         }
 
-        if ((args.OtherFixture.CollisionLayer & (int) CollisionGroup.Impassable) != 0)
+        if ((args.OtherFixture.CollisionLayer & (int) CollisionGroup.Impassable) != 0 &&
+            carSpeed >= ent.Comp.MinImpactSpeed)
             HandleWall(ent, dir, relSpeed, mCar);
     }
 
@@ -122,17 +138,17 @@ public sealed partial class SharedGrosseCarSystem
     private void HandleRammable(
         Entity<GrosseCarComponent> ent,
         EntityUid other,
+        PhysicsComponent otherBody,
         Vector2 dir,
         float relSpeed,
-        float mCar,
-        GrosseCarRammableComponent rammable)
+        float mCar)
     {
-        var mOther = Math.Max(rammable.MassOverride, 1f);
+        var mOther = Math.Max(otherBody.FixturesMass, 1f);
         SlowCar(ent, dir, relSpeed, mCar, mOther);
 
-        if (_net.IsServer && relSpeed >= rammable.RamMinSpeed)
+        if (_net.IsServer && relSpeed >= ent.Comp.RamMinSpeed)
         {
-            var scale = relSpeed / Math.Max(rammable.RamMinSpeed, 0.01f);
+            var scale = relSpeed / Math.Max(ent.Comp.RamMinSpeed, 0.01f);
             _damageable.TryChangeDamage(other, ent.Comp.HitDamage * scale);
             ApplyCarDamage(ent, ent.Comp.SelfDamage * 0.5f * scale);
         }
@@ -142,7 +158,7 @@ public sealed partial class SharedGrosseCarSystem
 
     private void SlowCar(Entity<GrosseCarComponent> ent, Vector2 dir, float relSpeed, float mCar, float mOther)
     {
-        if (!TryComp<PhysicsComponent>(ent.Owner, out var physics))
+        if (!_physicsQuery.TryComp(ent.Owner, out var physics))
             return;
 
         float reduce;

@@ -47,9 +47,6 @@
       - !type:PlaySoundBehavior
         sound:
           collection: MetalGlassBreak
-  - type: GrosseCarRammable
-    ramMinSpeed: 3
-    massOverride: 600
 
 - type: entity
   id: PoweredLightPostLargeC17

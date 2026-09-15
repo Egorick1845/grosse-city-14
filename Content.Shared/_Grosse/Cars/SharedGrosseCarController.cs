@@ -118,7 +118,7 @@ public sealed partial class SharedGrosseCarController : VirtualController
         {
             var cos = Vector2.Dot(facing, velocity / velSpeed);
             slip = MathF.Acos(Math.Clamp(cos, -1f, 1f));
-            drifting = slip > car.DriftSlipThreshold;
+            drifting = slip > car.DriftSlipThreshold || (car.Handbrake && velSpeed >= car.MinDriftSpeed);
         }
 
         if (car.IsDrifting != drifting || Math.Abs(car.DriftSlip - slip) > 0.01f)

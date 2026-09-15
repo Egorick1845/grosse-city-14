@@ -70,6 +70,12 @@ public sealed partial class GrosseCarComponent : Component
     [DataField]
     public float MinImpactSpeed = 4f;
 
+    /// <summary>
+    /// Minimum car speed to damage <see cref="DamageableComponent"/> / Injurable props (lights, trees, poles).
+    /// </summary>
+    [DataField]
+    public float RamMinSpeed = 4f;
+
     [DataField]
     public DamageSpecifier HitDamage = new();
 
@@ -130,4 +136,5 @@ public sealed partial class GrosseCarComponent : Component
     public Vector2 LastSkidPosition;
     public EntityUid? EngineSoundEntity;
     public EntityUid? DriftSoundEntity;
+    public bool VisualRunning;
 }

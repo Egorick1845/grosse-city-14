@@ -37,6 +37,7 @@
     steerRate: 2.2
     minSteerSpeed: 0.6
     minImpactSpeed: 4
+    ramMinSpeed: 4
     impactCooldown: 0.5
     impactRestitution: 0.3
     pushMultiplier: 1
@@ -116,6 +117,14 @@
           False: { visible: false }
       enum.GrosseCarVisuals.Handbrake:
         enum.GrosseCarVisualLayers.Handbrake:
+          True: { visible: true }
+          False: { visible: false }
+      enum.GrosseCarVisuals.Idle:
+        enum.GrosseCarVisualLayers.Idle:
+          True: { visible: true }
+          False: { visible: false }
+      enum.GrosseCarVisuals.Run:
+        enum.GrosseCarVisualLayers.Run:
           True: { visible: true }
           False: { visible: false }
       enum.GrosseCarVisuals.Driver:
