@@ -5,7 +5,7 @@
   parent: [BaseVehicleStrap, BaseDeployFoldable, BaseItem]
   components:
   - type: Sprite
-    sprite: _Grosse/Structures/Decoration/Barricades/baricada.rsi
+    sprite: _Grosse/Structures/Weapons/emplacement.rsi
     noRot: false
     drawdepth: Mobs
     layers:

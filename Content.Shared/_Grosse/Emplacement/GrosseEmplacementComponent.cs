@@ -27,6 +27,13 @@ public sealed partial class GrosseEmplacementComponent : Component
     /// </summary>
     [DataField, AutoNetworkedField]
     public Angle DeployedRotation;
+
+    /// <summary>
+    /// Extra yaw applied to mouse aim and to the deployer's facing.
+    /// Leave at zero when the 1-dir sprite barrel already points south (world 0).
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public Angle VisualRotationOffset;
 }
 
 /// <summary>

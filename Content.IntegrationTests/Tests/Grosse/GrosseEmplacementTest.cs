@@ -4,16 +4,20 @@ using Content.IntegrationTests.Fixtures;
 using Content.Shared._Grosse.Emplacement;
 using Content.Shared.Buckle;
 using Content.Shared.Buckle.Components;
+using Content.Shared.Foldable;
 using Content.Shared.Damage;
 using Content.Shared.Damage.Components;
 using Content.Shared.Damage.Systems;
 using Content.Shared.FixedPoint;
 using Content.Shared.Movement.Components;
+using Content.Shared.Projectiles;
 using Content.Shared.Vehicle.Components;
 using Content.Shared.Weapons.Ranged.Components;
 using Content.Shared.Weapons.Ranged.Systems;
 using Robust.Shared.GameObjects;
 using Robust.Shared.Map;
+using Robust.Shared.Maths;
+using Robust.Shared.Physics.Components;
 using Robust.Shared.Prototypes;
 
 namespace Content.IntegrationTests.Tests.Grosse;
@@ -94,7 +98,7 @@ public sealed class GrosseEmplacementTest : GameTest
             Assert.That(ammoBefore, Is.GreaterThan(0), "emplacement spawned with no ammo");
 
             var gun = entityManager.GetComponent<GunComponent>(turret);
-            var target = new EntityCoordinates(turret, new Vector2(10f, 0f));
+            var target = new EntityCoordinates(turret, new Vector2(0f, -10f));
             Assert.That(guns.AttemptShoot(gunner, (turret, gun), target), Is.True, "emplacement failed to fire");
         });
 
@@ -158,6 +162,81 @@ public sealed class GrosseEmplacementTest : GameTest
             Assert.That(damageable.GetTotalDamage(gunner), Is.EqualTo(FixedPoint2.New(20)));
             Assert.That(damageable.GetTotalDamage(turret), Is.GreaterThan(FixedPoint2.Zero));
             Assert.That(damageable.GetTotalDamage(turret), Is.LessThan(FixedPoint2.New(20)));
+        });
+    }
+
+    [Test]
+    public async Task UnfoldFacesTheDeployer()
+    {
+        var pair = Pair;
+        var server = pair.Server;
+        var map = await pair.CreateTestMap();
+        var coords = map.GridCoords;
+        var entityManager = server.EntMan;
+        var foldable = entityManager.System<FoldableSystem>();
+        var xform = entityManager.System<SharedTransformSystem>();
+
+        await server.WaitAssertion(() =>
+        {
+            var turret = entityManager.SpawnEntity("WeaponEmplacementCombineFolded", coords);
+            var deployer = entityManager.SpawnEntity(DummyId, coords.Offset(new Vector2(1f, 0f)));
+            var facing = Angle.FromDegrees(90);
+
+            xform.SetWorldRotation(deployer, facing);
+            Assert.That(entityManager.TryGetComponent(turret, out FoldableComponent? fold));
+            Assert.That(fold!.IsFolded, Is.True);
+            Assert.That(foldable.TrySetFolded(turret, fold, false, deployer), Is.True, "should unfold");
+            Assert.That(xform.GetWorldRotation(turret).EqualsApprox(facing), Is.True, "emplacement should face the deployer");
+            Assert.That(entityManager.GetComponent<GrosseEmplacementComponent>(turret).DeployedRotation.EqualsApprox(facing), Is.True);
+        });
+    }
+
+    [Test]
+    public async Task ShotIsClampedToYawCone()
+    {
+        var pair = Pair;
+        var server = pair.Server;
+        var map = await pair.CreateTestMap();
+        var coords = map.GridCoords;
+        var entityManager = server.EntMan;
+        var buckle = entityManager.System<SharedBuckleSystem>();
+        var guns = entityManager.System<SharedGunSystem>();
+        var xform = entityManager.System<SharedTransformSystem>();
+
+        EntityUid turret = default;
+        EntityUid gunner = default;
+
+        await server.WaitAssertion(() =>
+        {
+            turret = entityManager.SpawnEntity("WeaponEmplacementCombine", coords);
+            gunner = entityManager.SpawnEntity(DummyId, coords);
+            Assert.That(buckle.TryBuckle(gunner, gunner, turret), Is.True);
+        });
+
+        await server.WaitRunTicks(5);
+
+        await server.WaitAssertion(() =>
+        {
+            var gun = entityManager.GetComponent<GunComponent>(turret);
+            // East of a south-facing emplacement is well outside ±22.5°.
+            var target = new EntityCoordinates(turret, new Vector2(10f, 0f));
+            Assert.That(guns.AttemptShoot(gunner, (turret, gun), target), Is.True, "emplacement failed to fire");
+
+            var turretPos = xform.GetWorldPosition(turret);
+            var found = false;
+            var query = entityManager.EntityQueryEnumerator<ProjectileComponent, PhysicsComponent, TransformComponent>();
+            while (query.MoveNext(out _, out _, out var physics, out var projectileXform))
+            {
+                if ((xform.GetWorldPosition(projectileXform) - turretPos).LengthSquared() > 25f)
+                    continue;
+
+                found = true;
+                Assert.That(physics.LinearVelocity.Y, Is.LessThan(-1f), "clamped shot should travel south");
+                Assert.That(Math.Abs(physics.LinearVelocity.X), Is.LessThan(Math.Abs(physics.LinearVelocity.Y)),
+                    "shot aimed east must stay inside the south-facing yaw cone");
+            }
+
+            Assert.That(found, Is.True, "emplacement did not spawn a projectile");
         });
     }
 }

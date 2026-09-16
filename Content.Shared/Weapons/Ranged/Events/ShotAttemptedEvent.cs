@@ -1,4 +1,5 @@
 using Content.Shared.Weapons.Ranged.Components;
+using Robust.Shared.Map;
 
 namespace Content.Shared.Weapons.Ranged.Events;
 
@@ -18,6 +19,11 @@ public record struct ShotAttemptedEvent
     /// The gun being shot.
     /// </summary>
     public Entity<GunComponent> Used;
+
+    /// <summary>
+    /// Where the shot is aimed. Handlers may clamp or retarget this.
+    /// </summary>
+    public EntityCoordinates Coordinates;
 
     public bool Cancelled { get; private set; }
 

@@ -263,15 +263,11 @@ public abstract partial class SharedGunSystem : EntitySystem
     private bool AttemptShoot(EntityUid user, Entity<GunComponent> gun)
     {
         if (gun.Comp.FireRateModified <= 0f ||
-            !_actionBlockerSystem.CanAttack(user))
+            !_actionBlockerSystem.CanAttack(user) ||
+            gun.Comp.ShootCoordinates is not { } requested)
         {
             return false;
         }
-
-        var toCoordinates = gun.Comp.ShootCoordinates;
-
-        if (toCoordinates == null)
-            return false;
 
         var curTime = Timing.CurTime;
 
@@ -279,7 +275,8 @@ public abstract partial class SharedGunSystem : EntitySystem
         var prevention = new ShotAttemptedEvent
         {
             User = user,
-            Used = gun
+            Used = gun,
+            Coordinates = requested
         };
         RaiseLocalEvent(gun, ref prevention);
         if (prevention.Cancelled)
@@ -288,6 +285,8 @@ public abstract partial class SharedGunSystem : EntitySystem
         RaiseLocalEvent(user, ref prevention);
         if (prevention.Cancelled)
             return false;
+
+        var toCoordinates = prevention.Coordinates;
 
         // Need to do this to play the clicking sound for empty automatic weapons
         // but not play anything for burst fire.
@@ -415,7 +414,7 @@ public abstract partial class SharedGunSystem : EntitySystem
         }
 
         // Shoot confirmed - sounds also played here in case it's invalid (e.g. cartridge already spent).
-        Shoot(gun, ev.Ammo, fromCoordinates, toCoordinates.Value, out var userImpulse, user, throwItems: attemptEv.ThrowItems);
+        Shoot(gun, ev.Ammo, fromCoordinates, toCoordinates, out var userImpulse, user, throwItems: attemptEv.ThrowItems);
         var shotEv = new GunShotEvent(user, ev.Ammo);
         RaiseLocalEvent(gun, ref shotEv);
 
@@ -426,7 +425,7 @@ public abstract partial class SharedGunSystem : EntitySystem
         RaiseLocalEvent(user, ref shooterEv);
 
         if (shooterEv.Push)
-            CauseImpulse(fromCoordinates, toCoordinates.Value, (user, userPhysics));
+            CauseImpulse(fromCoordinates, toCoordinates, (user, userPhysics));
         return true;
     }
 

@@ -7,6 +7,8 @@ using Content.Shared.Inventory.VirtualItem;
 using Content.Shared.MouseRotator;
 using Content.Shared.Vehicle;
 using Content.Shared.Vehicle.Components;
+using Content.Shared.Weapons.Ranged.Events;
+using Robust.Shared.Map;
 using Robust.Shared.Timing;
 
 namespace Content.Shared._Grosse.Emplacement;
@@ -32,6 +34,7 @@ public sealed partial class GrosseEmplacementSystem : EntitySystem
         SubscribeLocalEvent<GrosseEmplacementComponent, VehicleCanRunEvent>(OnCanRun);
         SubscribeLocalEvent<GrosseEmplacementComponent, VehicleOperatorSetEvent>(OnOperatorSet);
         SubscribeLocalEvent<GrosseEmplacementComponent, MouseRotatorRotationEvent>(OnMouseRotation);
+        SubscribeLocalEvent<GrosseEmplacementComponent, ShotAttemptedEvent>(OnShotAttempted);
         SubscribeLocalEvent<GrosseEmplacementComponent, BeforeDamageChangedEvent>(OnEmplacementBeforeDamage);
         SubscribeLocalEvent<GrosseEmplacementCoverComponent, BeforeDamageChangedEvent>(OnCoverBeforeDamage);
     }
@@ -45,6 +48,9 @@ public sealed partial class GrosseEmplacementSystem : EntitySystem
     {
         if (args.IsFolded)
             return;
+
+        if (args.User is { } user)
+            FaceDeployer(ent, user);
 
         CaptureDeployedRotation(ent);
     }
@@ -87,7 +93,25 @@ public sealed partial class GrosseEmplacementSystem : EntitySystem
 
     private void OnMouseRotation(Entity<GrosseEmplacementComponent> ent, ref MouseRotatorRotationEvent args)
     {
-        args.Rotation = ClampYaw(ent.Comp.DeployedRotation, args.Rotation, ent.Comp.MaxYawDeviation);
+        var requested = args.Rotation + ent.Comp.VisualRotationOffset;
+        args.Rotation = ClampYaw(ent.Comp.DeployedRotation, requested, ent.Comp.MaxYawDeviation);
+    }
+
+    private void OnShotAttempted(Entity<GrosseEmplacementComponent> ent, ref ShotAttemptedEvent args)
+    {
+        if (args.Cancelled)
+            return;
+
+        var origin = _transform.GetMapCoordinates(args.User);
+        var to = _transform.ToMapCoordinates(args.Coordinates);
+        var distance = (to.Position - origin.Position).Length();
+        if (distance < 0.01f)
+            distance = 1f;
+
+        var requested = (to.Position - _transform.GetMapCoordinates(ent.Owner).Position).ToWorldAngle()
+                        + ent.Comp.VisualRotationOffset;
+        var yaw = ClampYaw(ent.Comp.DeployedRotation, requested, ent.Comp.MaxYawDeviation);
+        args.Coordinates = _transform.ToCoordinates(new MapCoordinates(origin.Position + yaw.ToWorldVec() * distance, origin.MapId));
     }
 
     private void OnEmplacementBeforeDamage(Entity<GrosseEmplacementComponent> ent, ref BeforeDamageChangedEvent args)
@@ -143,9 +167,15 @@ public sealed partial class GrosseEmplacementSystem : EntitySystem
         Dirty(ent);
     }
 
+    private void FaceDeployer(Entity<GrosseEmplacementComponent> ent, EntityUid user)
+    {
+        var facing = _transform.GetWorldRotation(user) + ent.Comp.VisualRotationOffset;
+        _transform.SetWorldRotation(ent.Owner, facing);
+    }
+
     private static Angle ClampYaw(Angle deployed, Angle requested, Angle maxDeviation)
     {
-        var deviation = Angle.ShortestDistance(requested, deployed);
+        var deviation = Angle.ShortestDistance(deployed, requested);
         if (Math.Abs(deviation.Theta) <= maxDeviation.Theta)
             return requested;
 
