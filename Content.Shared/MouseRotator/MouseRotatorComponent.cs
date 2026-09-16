@@ -50,3 +50,10 @@ public sealed class RequestMouseRotatorRotationEvent : EntityEventArgs
     public Angle Rotation;
     public NetEntity? User;
 }
+
+/// <summary>
+/// Raised on the rotator entity before a requested mouse rotation is applied.
+/// Handlers may clamp or otherwise replace <see cref="Rotation"/>.
+/// </summary>
+[ByRefEvent]
+public record struct MouseRotatorRotationEvent(Angle Rotation);

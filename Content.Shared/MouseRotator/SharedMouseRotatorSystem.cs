@@ -1,4 +1,5 @@
 ﻿using Content.Shared.Interaction;
+using Content.Shared.Vehicle.Components;
 
 namespace Content.Shared.MouseRotator;
 
@@ -47,19 +48,32 @@ public abstract partial class SharedMouseRotatorSystem : EntitySystem
 
     private void OnRequestRotation(RequestMouseRotatorRotationEvent msg, EntitySessionEventArgs args)
     {
-        // Ignore the request if the requested entity is not the user's attached entity.
-        // This can happen when a player switches controlled entities while rotating.
-        if (args.SenderSession.AttachedEntity != GetEntity(msg.User))
+        if (args.SenderSession.AttachedEntity is not { } attached)
             return;
 
-        if (args.SenderSession.AttachedEntity is not { } ent
-            || !TryComp<MouseRotatorComponent>(ent, out var rotator))
+        var target = msg.User is { } userNet ? GetEntity(userNet) : attached;
+
+        // Allow the attached player, or a vehicle operator rotating the vehicle itself.
+        if (attached != target)
         {
-            Log.Error($"User {args.SenderSession.Name} ({args.SenderSession.UserId}) tried setting local rotation directly without a valid mouse rotator component attached!");
+            if (!TryComp<VehicleOperatorComponent>(attached, out var op) || op.Vehicle != target)
+                return;
+        }
+
+        if (!TryComp<MouseRotatorComponent>(target, out var rotator))
+        {
+            if (attached == target)
+            {
+                Log.Error($"User {args.SenderSession.Name} ({args.SenderSession.UserId}) tried setting local rotation directly without a valid mouse rotator component attached!");
+            }
+
             return;
         }
 
-        rotator.GoalRotation = msg.Rotation;
-        Dirty(ent, rotator);
+        var ev = new MouseRotatorRotationEvent(msg.Rotation);
+        RaiseLocalEvent(target, ref ev);
+
+        rotator.GoalRotation = ev.Rotation;
+        Dirty(target, rotator);
     }
 }

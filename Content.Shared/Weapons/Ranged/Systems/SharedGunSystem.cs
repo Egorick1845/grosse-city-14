@@ -16,6 +16,7 @@ using Content.Shared.Projectiles;
 using Content.Shared.Tag;
 using Content.Shared.Throwing;
 using Content.Shared.Timing;
+using Content.Shared.Vehicle.Components;
 using Content.Shared.Verbs;
 using Content.Shared.Weapons.Hitscan.Components;
 using Content.Shared.Weapons.Melee;
@@ -188,7 +189,8 @@ public abstract partial class SharedGunSystem : EntitySystem
     }
 
     /// <summary>
-    ///     Tries to get an entity with <see cref="GunComponent"/> from the specified entity's hands, or from the entity itself.
+    ///     Tries to get an entity with <see cref="GunComponent"/> from a vehicle the entity is operating,
+    ///     from the specified entity's hands, or from the entity itself.
     /// </summary>
     /// <param name="entity">Entity that is holding the gun, or is the gun</param>
     /// <param name="gun">Gun entity to return</param>
@@ -196,6 +198,14 @@ public abstract partial class SharedGunSystem : EntitySystem
     public bool TryGetGun(EntityUid entity, out Entity<GunComponent> gun)
     {
         gun = default;
+
+        if (TryComp(entity, out VehicleOperatorComponent? vehicleOperator) &&
+            vehicleOperator.Vehicle is { } vehicle &&
+            TryComp(vehicle, out GunComponent? vehicleGun))
+        {
+            gun = (vehicle, vehicleGun);
+            return true;
+        }
 
         if (_hands.GetActiveItem(entity) is { } held &&
             TryComp(held, out GunComponent? gunComp))
