@@ -1,0 +1,8 @@
+- type: decal
+  id: GrosseCarSkid
+  tags: ["dirty"]
+  defaultCleanable: true
+  defaultSnap: false
+  sprite:
+    sprite: Decals/dirty.rsi
+    state: dirt

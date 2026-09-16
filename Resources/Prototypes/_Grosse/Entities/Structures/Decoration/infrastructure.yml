@@ -4,6 +4,18 @@
   name: светофор
   description: Городской светофор, лампочки давно сгорели и видимо никто не собирается его чинить.
   components:
+  - type: Damageable
+    damageModifierSet: Metallic
+  - type: Injurable
+    damageContainer: Inorganic
+  - type: Destructible
+    thresholds:
+    - trigger:
+        !type:DamageTrigger
+        damage: 80
+      behaviors:
+      - !type:DoActsBehavior
+        acts: [ "Destruction" ]
   - type: Sprite
     noRot: true
     sprite: _Grosse/rsi/hlstaff/misc/greenlight.rsi
@@ -56,6 +68,18 @@
   name: столб
   description: Столб ограничивающий проезд автомобилей и еще показывает пост-советскую эстетику.
   components:
+  - type: Damageable
+    damageModifierSet: Metallic
+  - type: Injurable
+    damageContainer: Inorganic
+  - type: Destructible
+    thresholds:
+    - trigger:
+        !type:DamageTrigger
+        damage: 80
+      behaviors:
+      - !type:DoActsBehavior
+        acts: [ "Destruction" ]
   - type: Sprite
     sprite: _Grosse/rsi/hlstaff/structure/decor.rsi
     offset: "0.45, -0.2"

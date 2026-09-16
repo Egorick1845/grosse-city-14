@@ -31,3 +31,19 @@
   - type: RandomSpawner
     prototypes:
     - VehicleZIL17
+
+- type: entity
+  name: спавнер КрАЗа
+  id: SpawnerVehicleKraz17
+  parent: SpawnerVehicleMoskvich17
+  components:
+  - type: Sprite
+    layers:
+    - state: red
+      scale: 3, 3
+    - sprite: _Grosse/rsi/Structures/Decoration/Transport/kraz.rsi
+      state: kraz1
+  - type: RandomSpawner
+    prototypes:
+    - VehicleKraz17
+

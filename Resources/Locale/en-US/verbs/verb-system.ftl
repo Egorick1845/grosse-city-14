@@ -13,6 +13,7 @@ verb-categories-debug = Debug
 verb-categories-examine = Examine
 verb-categories-eject = Eject
 verb-categories-insert = Insert
+verb-categories-enter = Enter
 verb-categories-buckle = Buckle
 verb-categories-unbuckle = Unbuckle
 verb-categories-rotate = Rotate

@@ -1,0 +1,32 @@
+- type: soundCollection
+  id: GrosseCarHit
+  files:
+  - /Audio/_Grosse/Vehicles/ram_hit_0.ogg
+  - /Audio/_Grosse/Vehicles/ram_hit_1.ogg
+  - /Audio/_Grosse/Vehicles/ram_hit_2.ogg
+  - /Audio/_Grosse/Vehicles/ram_hit_3.ogg
+  - /Audio/_Grosse/Vehicles/ram_hit_4.ogg
+
+- type: soundCollection
+  id: GrosseCarWall
+  files:
+  - /Audio/_Grosse/Vehicles/wall_crash_0.ogg
+  - /Audio/_Grosse/Vehicles/wall_crash_1.ogg
+  - /Audio/_Grosse/Vehicles/wall_crash_2.ogg
+  - /Audio/_Grosse/Vehicles/wall_crash_3.ogg
+  - /Audio/_Grosse/Vehicles/wall_crash_4.ogg
+
+- type: soundCollection
+  id: AmbienceGrosseCar
+  files:
+  - /Audio/_Grosse/Vehicles/Radio/all_by_myself.ogg
+  - /Audio/_Grosse/Vehicles/Radio/ambient_thing.ogg
+  - /Audio/_Grosse/Vehicles/Radio/auld_jack.ogg
+  - /Audio/_Grosse/Vehicles/Radio/cant_go_home_again.ogg
+  - /Audio/_Grosse/Vehicles/Radio/house_of_the_rising_sun.ogg
+  - /Audio/_Grosse/Vehicles/Radio/i_remember_david.ogg
+  - /Audio/_Grosse/Vehicles/Radio/only_air.ogg
+  - /Audio/_Grosse/Vehicles/Radio/questions.ogg
+  - /Audio/_Grosse/Vehicles/Radio/responsibility.ogg
+  - /Audio/_Grosse/Vehicles/Radio/sad_polka.ogg
+  - /Audio/_Grosse/Vehicles/Radio/the_vapours.ogg

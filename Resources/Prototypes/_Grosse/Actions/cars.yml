@@ -1,0 +1,37 @@
+- type: entity
+  parent: BaseAction
+  id: ActionGrosseCarExit
+  name: Exit vehicle
+  description: Get out of the vehicle.
+  components:
+  - type: Action
+    itemIconStyle: NoItem
+    checkCanInteract: false
+    priority: -6
+    icon:
+      sprite: Interface/Actions/actions_mecha.rsi
+      state: mech_eject
+  - type: InstantAction
+    event: !type:GrosseCarExitEvent
+
+- type: entity
+  parent: BaseMentalAction
+  id: ActionGrosseCarPlayMidi
+  name: Play MIDI
+  description: Open the cabin MIDI player.
+  components:
+  - type: Action
+    itemIconStyle: NoItem
+    checkCanInteract: false
+    priority: -5
+    icon: Interface/Actions/pai-midi.png
+  - type: InstantAction
+    event: !type:OpenUiActionEvent
+      key: enum.InstrumentUiKey.Key
+
+- type: entity
+  parent: ActionToggleLight
+  id: ActionGrosseCarToggleLight
+  components:
+  - type: Action
+    priority: -4

@@ -63,6 +63,7 @@ public abstract partial class SharedMoverController : VirtualController
     [Dependency] protected EntityQuery<PreventPilotComponent> PreventPilotQuery = default!;
     [Dependency] protected EntityQuery<RelayInputMoverComponent> RelayQuery = default!;
     [Dependency] protected EntityQuery<PullableComponent> PullableQuery = default!;
+    [Dependency] protected EntityQuery<SkipMobMovementComponent> SkipMobMovementQuery = default!;
     [Dependency] protected EntityQuery<TransformComponent> XformQuery = default!;
 
     private static readonly ProtoId<TagPrototype> FootstepSoundTag = "FootstepSound";
@@ -159,6 +160,13 @@ public abstract partial class SharedMoverController : VirtualController
                 Dirty(relay.RelayEntity, relayTargetMover);
             }
 
+            return;
+        }
+
+        // Vehicles and similar: they have InputMover for relayed WASD, but must not omni-walk.
+        if (SkipMobMovementQuery.HasComp(uid))
+        {
+            UsedMobMovement[uid] = true;
             return;
         }
 
