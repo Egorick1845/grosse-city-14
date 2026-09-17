@@ -187,7 +187,10 @@ public sealed class GrosseEmplacementTest : GameTest
             Assert.That(fold!.IsFolded, Is.True);
             Assert.That(foldable.TrySetFolded(turret, fold, false, deployer), Is.True, "should unfold");
             Assert.That(xform.GetWorldRotation(turret).EqualsApprox(facing), Is.True, "emplacement should face the deployer");
-            Assert.That(entityManager.GetComponent<GrosseEmplacementComponent>(turret).DeployedRotation.EqualsApprox(facing), Is.True);
+
+            // Copy first: calling a method on the field is Execute, which RA0002 forbids from tests.
+            var deployed = entityManager.GetComponent<GrosseEmplacementComponent>(turret).DeployedRotation;
+            Assert.That(deployed.EqualsApprox(facing), Is.True);
         });
     }
 
