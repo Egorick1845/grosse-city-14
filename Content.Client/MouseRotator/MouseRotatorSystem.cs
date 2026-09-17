@@ -1,4 +1,5 @@
 ﻿using Content.Shared.MouseRotator;
+using Content.Shared.Vehicle.Components;
 using Robust.Client.Graphics;
 using Robust.Client.Input;
 using Robust.Client.Player;
@@ -25,19 +26,30 @@ public sealed partial class MouseRotatorSystem : SharedMouseRotatorSystem
 
         var player = _player.LocalEntity;
 
-        if (player == null || !TryComp<MouseRotatorComponent>(player, out var rotator))
+        if (player == null)
             return;
 
-        var xform = Transform(player.Value);
+        var rotatorUid = player.Value;
+        if (TryComp<VehicleOperatorComponent>(player.Value, out var op) &&
+            op.Vehicle is { } vehicle &&
+            HasComp<MouseRotatorComponent>(vehicle))
+        {
+            rotatorUid = vehicle;
+        }
 
-        // Get mouse loc and convert to angle based on player location
+        if (!TryComp<MouseRotatorComponent>(rotatorUid, out var rotator))
+            return;
+
+        var xform = Transform(rotatorUid);
+
+        // Get mouse loc and convert to angle based on rotator location
         var coords = _input.MouseScreenPosition;
         var mapPos = _eye.PixelToMap(coords);
 
         if (mapPos.MapId == MapId.Nullspace)
             return;
 
-        var angle = (mapPos.Position - _transform.GetMapCoordinates(player.Value, xform: xform).Position).ToWorldAngle();
+        var angle = (mapPos.Position - _transform.GetMapCoordinates(rotatorUid, xform: xform).Position).ToWorldAngle();
 
         var curRot = _transform.GetWorldRotation(xform);
 
@@ -58,7 +70,7 @@ public sealed partial class MouseRotatorSystem : SharedMouseRotatorSystem
             RaisePredictiveEvent(new RequestMouseRotatorRotationEvent
             {
                 Rotation = rotation,
-                User = GetNetEntity(player)
+                User = GetNetEntity(rotatorUid)
             });
 
             return;
@@ -79,7 +91,7 @@ public sealed partial class MouseRotatorSystem : SharedMouseRotatorSystem
         RaisePredictiveEvent(new RequestMouseRotatorRotationEvent
         {
             Rotation = angle,
-            User = GetNetEntity(player)
+            User = GetNetEntity(rotatorUid)
         });
     }
 }

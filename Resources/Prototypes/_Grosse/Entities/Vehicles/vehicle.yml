@@ -31,15 +31,19 @@
   - type: Mech
     integrity: 100000
     maxIntegrity: 100000
-    mechToPilotDamageMultiplier: 0
     baseState: icon
     openState: icon
     brokenState: icon
     airtight: false
-    pilotWhitelist:
+    batteryRemovalDelay: 10
+  - type: Vehicle
+    canAttack: true
+    transferDamage: false
+    operatorWhitelist:
       tags:
         - CanPilot
-    batteryRemovalDelay: 10
+  - type: ContainerVehicle
+    containerId: "mech-pilot-slot"
   - type: MechAir
   - type: AirFilter
     gases:
@@ -152,7 +156,16 @@
     baseState: m1
     openState: m1
     brokenState: m1
-    mechToPilotDamageMultiplier: 0.75
+  - type: Vehicle
+    transferDamage: true
+    transferDamageModifier:
+      coefficients:
+        Blunt: 0.75
+        Slash: 0.75
+        Piercing: 0.75
+        Cold: 0.75
+        Heat: 0.75
+        Shock: 0.75
   - type: MobThresholds
     thresholds:
       0: Alive
@@ -286,7 +299,16 @@
     baseState: z2
     openState: z2
     brokenState: z2
-    mechToPilotDamageMultiplier: 0.2
+  - type: Vehicle
+    transferDamage: true
+    transferDamageModifier:
+      coefficients:
+        Blunt: 0.2
+        Slash: 0.2
+        Piercing: 0.2
+        Cold: 0.2
+        Heat: 0.2
+        Shock: 0.2
   - type: MobThresholds
     thresholds:
       0: Alive

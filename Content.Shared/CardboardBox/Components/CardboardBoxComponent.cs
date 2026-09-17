@@ -4,19 +4,14 @@ using Robust.Shared.Serialization;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom;
 
 namespace Content.Shared.CardboardBox.Components;
+
 /// <summary>
 /// Allows a user to control an EntityStorage entity while inside of it.
 /// Used for big cardboard box entities.
 /// </summary>
-[RegisterComponent, NetworkedComponent]
+[RegisterComponent, NetworkedComponent, AutoGenerateComponentPause]
 public sealed partial class CardboardBoxComponent : Component
 {
-    /// <summary>
-    /// The person in control of this box
-    /// </summary>
-    [DataField("mover")]
-    public EntityUid? Mover;
-
     /// <summary>
     /// The entity used for the box opening effect
     /// </summary>
@@ -31,12 +26,12 @@ public sealed partial class CardboardBoxComponent : Component
     [DataField("effectSound")]
     public SoundSpecifier? EffectSound;
 
-	/// <summary>
-	/// Whether to prevent the box from making the sound and effect
-	/// </summary>
+    /// <summary>
+    /// Whether to prevent the box from making the sound and effect
+    /// </summary>
     [ViewVariables(VVAccess.ReadWrite)]
-	[DataField("quiet")]
-	public bool Quiet = false;
+    [DataField("quiet")]
+    public bool Quiet = false;
 
     /// <summary>
     /// How far should the box opening effect go?
@@ -48,7 +43,7 @@ public sealed partial class CardboardBoxComponent : Component
     /// <summary>
     /// Time at which the sound effect can next be played.
     /// </summary>
-    [DataField("effectCooldown", customTypeSerializer: typeof(TimeOffsetSerializer))]
+    [DataField("effectCooldown", customTypeSerializer: typeof(TimeOffsetSerializer)), AutoPausedField]
     public TimeSpan EffectCooldown;
 
     /// <summary>
