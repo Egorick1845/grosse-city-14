@@ -256,6 +256,65 @@ public sealed class GrosseEmplacementTest : GameTest
     }
 
     [Test]
+    public async Task FoldedEmplacementCannotFireFromHands()
+    {
+        var pair = Pair;
+        var server = pair.Server;
+        var map = await pair.CreateTestMap();
+        var coords = map.GridCoords;
+        var entityManager = server.EntMan;
+        var hands = entityManager.System<SharedHandsSystem>();
+        var guns = entityManager.System<SharedGunSystem>();
+
+        await server.WaitAssertion(() =>
+        {
+            var turret = entityManager.SpawnEntity("WeaponEmplacementCombineFolded", coords);
+            var carrier = entityManager.SpawnEntity(DummyId, coords);
+
+            var isFolded = entityManager.GetComponent<FoldableComponent>(turret).IsFolded;
+            Assert.That(isFolded, Is.True);
+            Assert.That(hands.TryPickupAnyHand(carrier, turret), Is.True, "folded emplacement should be portable");
+            Assert.That(guns.TryGetGun(carrier, out var held) && held.Owner == turret, Is.True,
+                "carrying the folded emplacement still exposes its Gun");
+
+            var ammoBefore = guns.GetAmmoCount(turret);
+            Assert.That(ammoBefore, Is.GreaterThan(0), "emplacement spawned with no ammo");
+
+            var gun = entityManager.GetComponent<GunComponent>(turret);
+            var target = new EntityCoordinates(turret, new Vector2(0f, -10f));
+            Assert.That(guns.AttemptShoot(carrier, (turret, gun), target), Is.False,
+                "folded emplacement must not fire from hands");
+            Assert.That(guns.GetAmmoCount(turret), Is.EqualTo(ammoBefore), "folded shot consumed ammo");
+        });
+    }
+
+    [Test]
+    public async Task UnfoldedEmplacementCannotFireWithoutGunner()
+    {
+        var pair = Pair;
+        var server = pair.Server;
+        var map = await pair.CreateTestMap();
+        var coords = map.GridCoords;
+        var entityManager = server.EntMan;
+        var guns = entityManager.System<SharedGunSystem>();
+
+        await server.WaitAssertion(() =>
+        {
+            var turret = entityManager.SpawnEntity("WeaponEmplacementCombine", coords);
+            var bystander = entityManager.SpawnEntity(DummyId, coords);
+
+            var ammoBefore = guns.GetAmmoCount(turret);
+            Assert.That(ammoBefore, Is.GreaterThan(0), "emplacement spawned with no ammo");
+
+            var gun = entityManager.GetComponent<GunComponent>(turret);
+            var target = new EntityCoordinates(turret, new Vector2(0f, -10f));
+            Assert.That(guns.AttemptShoot(bystander, (turret, gun), target), Is.False,
+                "emplacement must only fire when manned");
+            Assert.That(guns.GetAmmoCount(turret), Is.EqualTo(ammoBefore), "unmanned shot consumed ammo");
+        });
+    }
+
+    [Test]
     public async Task GunnerCannotDropOrThrowVirtualItems()
     {
         var pair = Pair;

@@ -96,6 +96,19 @@ public sealed partial class GrosseEmplacementSystem : EntitySystem
         if (args.Cancelled)
             return;
 
+        // Folded / carried emplacements are still a Gun in-hand, but they only fire when manned.
+        if (TryComp<FoldableComponent>(ent, out var foldable) && foldable.IsFolded)
+        {
+            args.Cancel();
+            return;
+        }
+
+        if (!_vehicle.TryGetOperator(ent.Owner, out var operatorEnt) || operatorEnt.Value.Owner != args.User)
+        {
+            args.Cancel();
+            return;
+        }
+
         var origin = _transform.GetMapCoordinates(args.User);
         var to = _transform.ToMapCoordinates(args.Coordinates);
         var distance = (to.Position - origin.Position).Length();
