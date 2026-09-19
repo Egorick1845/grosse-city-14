@@ -2,6 +2,9 @@
 using System.Linq;
 using Content.IntegrationTests.Fixtures;
 using Content.Shared._Grosse.Cars;
+using Content.Shared.Hands.EntitySystems;
+using Content.Shared.Interaction.Components;
+using Content.Shared.Inventory.VirtualItem;
 using Content.Shared.Movement.Components;
 using Content.Shared.Movement.Systems;
 using Content.Shared.Prototypes;
@@ -29,6 +32,14 @@ public sealed class GrosseCarTest : GameTest
   name: {DummyId}
   components:
   - type: Hands
+    hands:
+      right:
+        location: Right
+      left:
+        location: Left
+    sortedHands:
+    - right
+    - left
   - type: ComplexInteraction
   - type: InputMover
   - type: Physics
@@ -217,5 +228,80 @@ public sealed class GrosseCarTest : GameTest
             var physics = entityManager.GetComponent<PhysicsComponent>(car);
             Assert.That(physics.LinearVelocity.Length(), Is.LessThan(0.01f), "empty parked car must not be stepped as if driven");
         });
+    }
+
+    [Test]
+    public async Task DriverCannotDropVirtualItems()
+    {
+        var pair = Pair;
+        var server = pair.Server;
+        var map = await pair.CreateTestMap();
+        var coords = map.GridCoords;
+        var entityManager = server.EntMan;
+        var cars = entityManager.System<SharedGrosseCarSystem>();
+        var hands = entityManager.System<SharedHandsSystem>();
+
+        EntityUid car = default;
+        EntityUid driver = default;
+        EntityUid passenger = default;
+
+        await server.WaitAssertion(() =>
+        {
+            car = entityManager.SpawnEntity("VehicleKraz17", coords);
+            driver = entityManager.SpawnEntity(DummyId, coords);
+            passenger = entityManager.SpawnEntity(DummyId, coords);
+
+            Assert.That(cars.TryEnterSlot(driver, car, "driver", skipDelay: true), Is.True);
+            Assert.That(cars.TryEnterSlot(passenger, car, "passenger", skipDelay: true), Is.True);
+
+            Assert.That(hands.GetHandCount(driver), Is.GreaterThan(0));
+            Assert.That(CountBlockingVirtuals(entityManager, driver, car), Is.EqualTo(hands.GetHandCount(driver)),
+                "every driver hand should be occupied by the car");
+            Assert.That(hands.CountFreeHands(driver), Is.EqualTo(0));
+            Assert.That(CountBlockingVirtuals(entityManager, passenger, car), Is.EqualTo(0),
+                "passengers keep their hands free");
+
+            foreach (var held in hands.EnumerateHeld(driver))
+            {
+                Assert.That(entityManager.HasComponent<UnremoveableComponent>(held), Is.True);
+                var blocking = entityManager.GetComponent<VirtualItemComponent>(held).BlockingEntity;
+                Assert.That(blocking, Is.EqualTo(car));
+                Assert.That(hands.TryDrop(driver, held), Is.False, "driver must not be able to drop occupancy virtual items");
+            }
+
+            Assert.That(CountBlockingVirtuals(entityManager, driver, car), Is.EqualTo(hands.GetHandCount(driver)));
+
+            var driverCrowbar = entityManager.SpawnEntity("Crowbar", coords);
+            Assert.That(hands.TryPickupAnyHand(driver, driverCrowbar), Is.False, "occupied driver hands must not pick up other items");
+            Assert.That(hands.CountFreeHands(passenger), Is.EqualTo(hands.GetHandCount(passenger)));
+
+            Assert.That(cars.TryEject((car, entityManager.GetComponent<GrosseCarComponent>(car)), driver, driver, skipDelay: true), Is.True);
+        });
+
+        await server.WaitRunTicks(5);
+
+        await server.WaitAssertion(() =>
+        {
+            Assert.That(CountBlockingVirtuals(entityManager, driver, car), Is.EqualTo(0));
+            var crowbar = entityManager.SpawnEntity("Crowbar", coords);
+            Assert.That(hands.TryPickupAnyHand(driver, crowbar), Is.True, "driver should use hands after leaving the car");
+        });
+    }
+
+    private static int CountBlockingVirtuals(IEntityManager entityManager, EntityUid user, EntityUid blocking)
+    {
+        var hands = entityManager.System<SharedHandsSystem>();
+        var count = 0;
+        foreach (var held in hands.EnumerateHeld(user))
+        {
+            if (!entityManager.TryGetComponent(held, out VirtualItemComponent? virt))
+                continue;
+
+            var blockingEntity = virt.BlockingEntity;
+            if (blockingEntity == blocking)
+                count++;
+        }
+
+        return count;
     }
 }

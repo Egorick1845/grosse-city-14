@@ -3,7 +3,6 @@ using Content.Shared.ActionBlocker;
 using Content.Shared.Actions;
 using Content.Shared.DoAfter;
 using Content.Shared.DragDrop;
-using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Input;
 using Content.Shared.Instruments;
 using Content.Shared.Inventory.VirtualItem;
@@ -42,7 +41,6 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
     [Dependency] private SharedContainerSystem _container = default!;
     [Dependency] private SharedUserInterfaceSystem _ui = default!;
     [Dependency] private SharedDoAfterSystem _doAfter = default!;
-    [Dependency] private SharedHandsSystem _hands = default!;
     [Dependency] private SharedMoverController _mover = default!;
     [Dependency] private SharedPopupSystem _popup = default!;
     [Dependency] private SharedTransformSystem _transform = default!;
@@ -427,12 +425,7 @@ public sealed partial class SharedGrosseCarSystem : EntitySystem
         if (slot.IsDriver)
         {
             _mover.SetRelay(occupant, car.Owner);
-
-            foreach (var _ in _hands.EnumerateHands(occupant))
-            {
-                if (!_virtual.TrySpawnVirtualItemInHand(car.Owner, occupant, dropOthers: true, silent: true))
-                    break;
-            }
+            _virtual.TryOccupyHands(car.Owner, occupant);
         }
 
         _blocker.UpdateCanMove(occupant);

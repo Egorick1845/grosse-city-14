@@ -2,7 +2,6 @@ using System.Linq;
 using Content.Shared.Damage;
 using Content.Shared.Damage.Systems;
 using Content.Shared.Foldable;
-using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Inventory.VirtualItem;
 using Content.Shared.MouseRotator;
 using Content.Shared.Vehicle;
@@ -16,7 +15,6 @@ namespace Content.Shared._Grosse.Emplacement;
 public sealed partial class GrosseEmplacementSystem : EntitySystem
 {
     [Dependency] private DamageableSystem _damageable = default!;
-    [Dependency] private SharedHandsSystem _hands = default!;
     [Dependency] private SharedTransformSystem _transform = default!;
     [Dependency] private SharedVirtualItemSystem _virtual = default!;
     [Dependency] private IGameTiming _timing = default!;
@@ -80,11 +78,7 @@ public sealed partial class GrosseEmplacementSystem : EntitySystem
         if (args.NewOperator is not { } newOperator)
             return;
 
-        foreach (var _ in _hands.EnumerateHands(newOperator))
-        {
-            if (!_virtual.TrySpawnVirtualItemInHand(ent.Owner, newOperator, dropOthers: true, silent: true))
-                break;
-        }
+        _virtual.TryOccupyHands(ent.Owner, newOperator);
 
         var cover = EnsureComp<GrosseEmplacementCoverComponent>(newOperator);
         cover.Emplacement = ent.Owner;
