@@ -4,11 +4,15 @@ using Content.IntegrationTests.Fixtures;
 using Content.Shared._Grosse.Emplacement;
 using Content.Shared.Buckle;
 using Content.Shared.Buckle.Components;
+using Content.Server.Hands.Systems;
 using Content.Shared.Foldable;
 using Content.Shared.Damage;
 using Content.Shared.Damage.Components;
 using Content.Shared.Damage.Systems;
 using Content.Shared.FixedPoint;
+using Content.Shared.Hands.EntitySystems;
+using Content.Shared.Interaction.Components;
+using Content.Shared.Inventory.VirtualItem;
 using Content.Shared.Movement.Components;
 using Content.Shared.Projectiles;
 using Content.Shared.Vehicle.Components;
@@ -36,6 +40,14 @@ public sealed class GrosseEmplacementTest : GameTest
   components:
   - type: Buckle
   - type: Hands
+    hands:
+      right:
+        location: Right
+      left:
+        location: Left
+    sortedHands:
+    - right
+    - left
   - type: ComplexInteraction
   - type: InputMover
   - type: Physics
@@ -241,5 +253,140 @@ public sealed class GrosseEmplacementTest : GameTest
 
             Assert.That(found, Is.True, "emplacement did not spawn a projectile");
         });
+    }
+
+    [Test]
+    public async Task FoldedEmplacementCannotFireFromHands()
+    {
+        var pair = Pair;
+        var server = pair.Server;
+        var map = await pair.CreateTestMap();
+        var coords = map.GridCoords;
+        var entityManager = server.EntMan;
+        var hands = entityManager.System<SharedHandsSystem>();
+        var guns = entityManager.System<SharedGunSystem>();
+
+        await server.WaitAssertion(() =>
+        {
+            var turret = entityManager.SpawnEntity("WeaponEmplacementCombineFolded", coords);
+            var carrier = entityManager.SpawnEntity(DummyId, coords);
+
+            var isFolded = entityManager.GetComponent<FoldableComponent>(turret).IsFolded;
+            Assert.That(isFolded, Is.True);
+            Assert.That(hands.TryPickupAnyHand(carrier, turret), Is.True, "folded emplacement should be portable");
+            Assert.That(guns.TryGetGun(carrier, out var held) && held.Owner == turret, Is.True,
+                "carrying the folded emplacement still exposes its Gun");
+
+            var ammoBefore = guns.GetAmmoCount(turret);
+            Assert.That(ammoBefore, Is.GreaterThan(0), "emplacement spawned with no ammo");
+
+            var gun = entityManager.GetComponent<GunComponent>(turret);
+            var target = new EntityCoordinates(turret, new Vector2(0f, -10f));
+            Assert.That(guns.AttemptShoot(carrier, (turret, gun), target), Is.False,
+                "folded emplacement must not fire from hands");
+            Assert.That(guns.GetAmmoCount(turret), Is.EqualTo(ammoBefore), "folded shot consumed ammo");
+        });
+    }
+
+    [Test]
+    public async Task UnfoldedEmplacementCannotFireWithoutGunner()
+    {
+        var pair = Pair;
+        var server = pair.Server;
+        var map = await pair.CreateTestMap();
+        var coords = map.GridCoords;
+        var entityManager = server.EntMan;
+        var guns = entityManager.System<SharedGunSystem>();
+
+        await server.WaitAssertion(() =>
+        {
+            var turret = entityManager.SpawnEntity("WeaponEmplacementCombine", coords);
+            var bystander = entityManager.SpawnEntity(DummyId, coords);
+
+            var ammoBefore = guns.GetAmmoCount(turret);
+            Assert.That(ammoBefore, Is.GreaterThan(0), "emplacement spawned with no ammo");
+
+            var gun = entityManager.GetComponent<GunComponent>(turret);
+            var target = new EntityCoordinates(turret, new Vector2(0f, -10f));
+            Assert.That(guns.AttemptShoot(bystander, (turret, gun), target), Is.False,
+                "emplacement must only fire when manned");
+            Assert.That(guns.GetAmmoCount(turret), Is.EqualTo(ammoBefore), "unmanned shot consumed ammo");
+        });
+    }
+
+    [Test]
+    public async Task GunnerCannotDropOrThrowVirtualItems()
+    {
+        var pair = Pair;
+        var server = pair.Server;
+        var map = await pair.CreateTestMap();
+        var coords = map.GridCoords;
+        var entityManager = server.EntMan;
+        var buckle = entityManager.System<SharedBuckleSystem>();
+        var hands = entityManager.System<SharedHandsSystem>();
+        var throwHands = entityManager.System<HandsSystem>();
+
+        EntityUid turret = default;
+        EntityUid gunner = default;
+
+        await server.WaitAssertion(() =>
+        {
+            turret = entityManager.SpawnEntity("WeaponEmplacementCombine", coords);
+            gunner = entityManager.SpawnEntity(DummyId, coords);
+            Assert.That(buckle.TryBuckle(gunner, gunner, turret), Is.True);
+            Assert.That(hands.GetHandCount(gunner), Is.GreaterThan(0));
+            Assert.That(CountBlockingVirtuals(entityManager, gunner, turret), Is.EqualTo(hands.GetHandCount(gunner)),
+                "every gunner hand should be occupied by the emplacement");
+            Assert.That(hands.CountFreeHands(gunner), Is.EqualTo(0));
+
+            foreach (var held in hands.EnumerateHeld(gunner))
+            {
+                Assert.That(entityManager.HasComponent<UnremoveableComponent>(held), Is.True);
+                var blocking = entityManager.GetComponent<VirtualItemComponent>(held).BlockingEntity;
+                Assert.That(blocking, Is.EqualTo(turret));
+                Assert.That(hands.TryDrop(gunner, held), Is.False, "gunner must not be able to drop occupancy virtual items");
+            }
+
+            Assert.That(CountBlockingVirtuals(entityManager, gunner, turret), Is.EqualTo(hands.GetHandCount(gunner)));
+            Assert.That(throwHands.ThrowHeldItem(gunner, coords.Offset(new Vector2(1f, 0f))), Is.False,
+                "gunner must not be able to throw occupancy virtual items");
+            Assert.That(CountBlockingVirtuals(entityManager, gunner, turret), Is.EqualTo(hands.GetHandCount(gunner)));
+
+            var crowbar = entityManager.SpawnEntity("Crowbar", coords);
+            Assert.That(hands.TryPickupAnyHand(gunner, crowbar), Is.False, "occupied hands must not pick up other items");
+        });
+
+        await server.WaitRunTicks(15);
+
+        await server.WaitAssertion(() =>
+        {
+            Assert.That(buckle.TryUnbuckle(gunner, gunner), Is.True);
+        });
+
+        await server.WaitRunTicks(5);
+
+        await server.WaitAssertion(() =>
+        {
+            Assert.That(CountBlockingVirtuals(entityManager, gunner, turret), Is.EqualTo(0));
+            var crowbar = entityManager.SpawnEntity("Crowbar", coords);
+            Assert.That(hands.TryPickupAnyHand(gunner, crowbar), Is.True, "gunner should use hands after leaving the emplacement");
+        });
+    }
+
+    private static int CountBlockingVirtuals(IEntityManager entityManager, EntityUid user, EntityUid blocking)
+    {
+        var hands = entityManager.System<SharedHandsSystem>();
+        var count = 0;
+        foreach (var held in hands.EnumerateHeld(user))
+        {
+            if (!entityManager.TryGetComponent(held, out VirtualItemComponent? virt))
+                continue;
+
+            var blockingEntity = virt.BlockingEntity;
+            if (blockingEntity == blocking)
+                count++;
+        }
+
+        return count;
     }
 }

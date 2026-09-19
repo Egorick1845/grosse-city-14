@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Content.Shared.Hands;
 using Content.Shared.Hands.EntitySystems;
 using Content.Shared.Interaction;
+using Content.Shared.Interaction.Components;
 using Content.Shared.Interaction.Events;
 using Content.Shared.Inventory.Events;
 using Content.Shared.Item;
@@ -145,6 +146,21 @@ public abstract partial class SharedVirtualItemSystem : EntitySystem
 
         _handsSystem.DoPickup(user, empty, virtualItem.Value);
         return true;
+    }
+
+    /// <summary>
+    /// Occupies every hand with an unremoveable virtual copy of <paramref name="blockingEnt"/>.
+    /// Used so seated operators cannot drop the blockers and pick up other items.
+    /// </summary>
+    public void TryOccupyHands(EntityUid blockingEnt, EntityUid user)
+    {
+        foreach (var _ in _handsSystem.EnumerateHands(user))
+        {
+            if (!TrySpawnVirtualItemInHand(blockingEnt, user, out var virtualItem, dropOthers: true, silent: true))
+                break;
+
+            EnsureComp<UnremoveableComponent>(virtualItem.Value);
+        }
     }
 
     /// <summary>
