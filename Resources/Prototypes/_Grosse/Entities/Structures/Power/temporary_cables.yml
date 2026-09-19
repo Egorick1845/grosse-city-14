@@ -1,0 +1,30 @@
+- type: entity
+  id: CableHVUncuttableTimed
+  parent: CableHVUncuttable
+  suffix: timed 10min
+  components:
+  - type: TimedDespawn
+    lifetime: 600
+
+- type: entity
+  id: CableMVUncuttableTimed
+  parent: CableMVUncuttable
+  suffix: timed 10min
+  components:
+  - type: TimedDespawn
+    lifetime: 600
+
+- type: entity
+  id: CableApcExtensionUncuttableTimed
+  parent: CableApcExtensionUncuttable
+  suffix: timed 10min
+  components:
+  - type: TimedDespawn
+    lifetime: 600
+
+- type: entity
+  id: CableApcExtensionUncuttableTimed10sec
+  parent: CableApcExtensionUncuttable 
+  components:
+  - type: TimedDespawn
+    lifetime: 10
