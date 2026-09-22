@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Content.Shared.Mind;
 using Content.Shared.Players.PlayTimeTracking;
 using Content.Shared.Roles.Components;
 using Robust.Shared.Prototypes;
@@ -182,6 +183,16 @@ public abstract partial class SharedJobSystem : EntitySystem
     /// </summary>
     public bool MindTryGetJobName([NotNullWhen(true)] EntityUid? mindId, out string name)
     {
+        if (mindId != null
+            && TryComp(mindId.Value, out MindComponent? mind)
+            && mind.OwnedEntity != null
+            && TryComp(mind.OwnedEntity.Value, out JobPlayTimeRankComponent? rank)
+            && !string.IsNullOrEmpty(rank.DisplayName))
+        {
+            name = rank.DisplayName;
+            return true;
+        }
+
         if (MindTryGetJob(mindId, out var prototype))
         {
             name = prototype.LocalizedName;

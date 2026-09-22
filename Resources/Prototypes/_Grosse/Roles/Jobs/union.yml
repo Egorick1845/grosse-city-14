@@ -16,6 +16,24 @@
     - !type:SpeciesRequirement
       species:
       - Human
+  playTimeRanks:
+  - name: Ветеран Гражданской Обороны
+    idCard: UnionIDCardCivilProtection
+    icon: JobIconUnionGold
+    requirements:
+    - !type:RoleTimeRequirement
+      role: JobCivilProtection
+      time: 20h
+  - name: Элитный юнит ГО
+    idCard: UnionIDCardCivilProtectionOfficer
+    icon: JobIconUnionCommander
+    requirements:
+    - !type:RoleTimeRequirement
+      role: JobCivilProtection
+      time: 40h
+    - !type:DepartmentTimeRequirement
+      department: City14CivilProtection
+      time: 60h
   access:
     - UnionBase
     - UnionCP

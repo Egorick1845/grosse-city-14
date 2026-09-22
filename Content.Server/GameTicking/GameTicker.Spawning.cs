@@ -4,6 +4,7 @@ using System.Numerics;
 using Content.Server.Administration.Managers;
 using Content.Server.Administration.Systems;
 using Content.Server.GameTicking.Events;
+using Content.Server.Players.PlayTimeTracking;
 using Content.Server.Spawners.Components;
 using Content.Server.Speech.Components;
 using Content.Server.Station.Components;
@@ -34,6 +35,7 @@ namespace Content.Server.GameTicking
         [Dependency] private IAdminManager _adminManager = default!;
         [Dependency] private SharedJobSystem _jobs = default!;
         [Dependency] private AdminSystem _admin = default!;
+        [Dependency] private PlayTimeTrackingManager _playTimeTracking = default!;
 
         public static readonly EntProtoId ObserverPrototypeName = "MobObserver";
         public static readonly EntProtoId AdminObserverPrototypeName = "AdminObserver";
@@ -356,6 +358,11 @@ namespace Content.Server.GameTicking
             var mobMaybe = _stationSpawning.SpawnPlayerCharacterOnStation(station, jobId, character);
             DebugTools.AssertNotNull(mobMaybe);
             mob = mobMaybe!.Value;
+
+            if (_playTimeTracking.TryGetTrackerTimes(player, out var playTimes))
+            {
+                _stationSpawning.ApplyPlayTimeRank(mob, jobPrototype, station, playTimes, character);
+            }
 
             var newMind = _mind.CreateMind(data.UserId, Name(mob));
             _mind.SetUserId(newMind, data.UserId);
