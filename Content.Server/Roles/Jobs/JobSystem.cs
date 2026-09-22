@@ -45,16 +45,19 @@ public sealed partial class JobSystem : SharedJobSystem
         if (!_player.TryGetSessionById(component.UserId, out var session))
             return;
 
-        if (!MindTryGetJob(mindId, out var prototype))
+        if (!MindTryGetJobName(mindId, out var jobName))
             return;
 
         _chat.DispatchServerMessage(session, Loc.GetString("job-greet-introduce-job-name",
-            ("jobName", CultureInfo.CurrentCulture.TextInfo.ToTitleCase(prototype.LocalizedName))));
+            ("jobName", CultureInfo.CurrentCulture.TextInfo.ToTitleCase(jobName))));
+
+        if (!MindTryGetJob(mindId, out var prototype))
+            return;
 
         if (prototype.RequireAdminNotify)
             _chat.DispatchServerMessage(session, Loc.GetString("job-greet-important-disconnect-admin-notify"));
 
-        _chat.DispatchServerMessage(session, Loc.GetString("job-greet-supervisors-warning", ("jobName", prototype.LocalizedName), ("supervisors", Loc.GetString(prototype.Supervisors))));
+        _chat.DispatchServerMessage(session, Loc.GetString("job-greet-supervisors-warning", ("jobName", jobName), ("supervisors", Loc.GetString(prototype.Supervisors))));
     }
 
     public void MindAddJob(EntityUid mindId, string jobPrototypeId)

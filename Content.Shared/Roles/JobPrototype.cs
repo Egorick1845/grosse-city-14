@@ -149,6 +149,13 @@ public sealed partial class JobPrototype : IPrototype
     /// </summary>
     [DataField]
     public List<ProtoId<GuideEntryPrototype>>? Guides;
+
+    /// <summary>
+    /// Optional playtime-gated ranks that override job title, ID card entity, and icon at spawn.
+    /// Ordered junior → senior; the last rank whose <see cref="JobPlayTimeRank.Requirements"/> pass is used.
+    /// </summary>
+    [DataField]
+    public List<JobPlayTimeRank>? PlayTimeRanks;
 }
 
 /// <summary>

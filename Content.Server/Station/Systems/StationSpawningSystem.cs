@@ -16,7 +16,9 @@ using Content.Shared.PDA;
 using Content.Shared.Preferences;
 using Content.Shared.Preferences.Loadouts;
 using Content.Shared.Roles;
+using Content.Shared.Roles.Components;
 using Content.Shared.Station;
+using Content.Shared.StatusIcon;
 using JetBrains.Annotations;
 using Robust.Shared.Configuration;
 using Robust.Shared.Map;
@@ -187,7 +189,15 @@ public sealed partial class StationSpawningSystem : SharedStationSpawningSystem
     /// <param name="characterName">Character name to use for the ID.</param>
     /// <param name="jobPrototype">Job prototype to use for the PDA and ID.</param>
     /// <param name="station">The station this player is being spawned on.</param>
-    public void SetPdaAndIdCardData(EntityUid entity, string characterName, JobPrototype jobPrototype, EntityUid? station)
+    /// <param name="jobTitleOverride">Optional job title instead of <see cref="JobPrototype.LocalizedName"/>.</param>
+    /// <param name="jobIconOverride">Optional job icon instead of <see cref="JobPrototype.Icon"/>.</param>
+    public void SetPdaAndIdCardData(
+        EntityUid entity,
+        string characterName,
+        JobPrototype jobPrototype,
+        EntityUid? station,
+        string? jobTitleOverride = null,
+        ProtoId<JobIconPrototype>? jobIconOverride = null)
     {
         if (!InventorySystem.TryGetSlotEntity(entity, "id", out var idUid))
             return;
@@ -200,9 +210,10 @@ public sealed partial class StationSpawningSystem : SharedStationSpawningSystem
             return;
 
         _cardSystem.TryChangeFullName(cardId, characterName, card);
-        _cardSystem.TryChangeJobTitle(cardId, jobPrototype.LocalizedName, card);
+        _cardSystem.TryChangeJobTitle(cardId, jobTitleOverride ?? jobPrototype.LocalizedName, card);
 
-        if (_prototypeManager.Resolve(jobPrototype.Icon, out var jobIcon))
+        var iconId = jobIconOverride ?? jobPrototype.Icon;
+        if (_prototypeManager.Resolve(iconId, out var jobIcon))
             _cardSystem.TryChangeJobIcon(cardId, jobIcon, card);
 
         var extendedAccess = false;
@@ -218,6 +229,55 @@ public sealed partial class StationSpawningSystem : SharedStationSpawningSystem
             _pdaSystem.SetOwner(idUid.Value, pdaComponent, entity, characterName);
     }
 
+    /// <summary>
+    /// Applies a playtime-gated job rank: optional ID swap, title/icon override, and
+    /// <see cref="JobPlayTimeRankComponent"/> for display name lookups.
+    /// </summary>
+    public void ApplyPlayTimeRank(
+        EntityUid entity,
+        JobPrototype jobPrototype,
+        EntityUid? station,
+        IReadOnlyDictionary<string, TimeSpan> playTimes,
+        HumanoidCharacterProfile? profile)
+    {
+        if (!JobPlayTimeRanks.TryGetPlayTimeRank(
+                jobPrototype,
+                playTimes,
+                profile,
+                EntityManager,
+                _prototypeManager,
+                out var rank))
+        {
+            return;
+        }
+
+        var displayName = rank.LocalizedName;
+        var rankComp = EnsureComp<JobPlayTimeRankComponent>(entity);
+        rankComp.DisplayName = displayName;
+        rankComp.Icon = rank.Icon;
+        Dirty(entity, rankComp);
+
+        if (rank.IdCard != null)
+        {
+            if (InventorySystem.TryGetSlotEntity(entity, "id", out var oldId))
+            {
+                InventorySystem.TryUnequip(entity, "id", out _, silent: true, force: true);
+                QueueDel(oldId.Value);
+            }
+
+            var coords = Transform(entity).Coordinates;
+            var newId = Spawn(rank.IdCard.Value, coords);
+            InventorySystem.TryEquip(entity, newId, "id", silent: true, force: true);
+        }
+
+        SetPdaAndIdCardData(
+            entity,
+            MetaData(entity).EntityName,
+            jobPrototype,
+            station,
+            displayName,
+            rank.Icon);
+    }
 
     #endregion Player spawning helpers
 }
