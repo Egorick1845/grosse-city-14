@@ -1,5 +1,21 @@
 - type: entity
   parent: BaseAction
+  id: ActionGrosseTankReload
+  name: Reload
+  description: Chamber one shell from the rack.
+  components:
+  - type: Action
+    itemIconStyle: NoItem
+    checkCanInteract: false
+    priority: -7
+    icon:
+      sprite: Objects/Weapons/Guns/Ammunition/Casings/large_casing.rsi
+      state: base
+  - type: InstantAction
+    event: !type:GrosseTankReloadEvent
+
+- type: entity
+  parent: BaseAction
   id: ActionGrosseCarExit
   name: Exit vehicle
   description: Get out of the vehicle.

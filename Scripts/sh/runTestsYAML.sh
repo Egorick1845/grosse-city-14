@@ -1,14 +1,12 @@
-# SPDX-FileCopyrightText: 2024 gluesniffler <159397573+gluesniffler@users.noreply.github.com>
-# SPDX-FileCopyrightText: 2025 Aiden <28298836+Aidenkrz@users.noreply.github.com>
-#
-# SPDX-License-Identifier: AGPL-3.0-or-later
-
 cd ../../
 
 mkdir Scripts/logs
 
-rm Scripts/logs/Content.YAMLLinter.log
-dotnet run --project Content.YAMLLinter/Content.YAMLLinter.csproj -c DebugOpt -- NUnit.ConsoleOut=0 > Scripts/logs/Content.YAMLLinter.log
+rm Scripts/logs/Content.YAMLLinter.Debug.log
+dotnet run --project Content.YAMLLinter/Content.YAMLLinter.csproj -c Debug -- NUnit.ConsoleOut=0 > Scripts/logs/Content.YAMLLinter.Debug.log
+
+rm Scripts/logs/Content.YAMLLinter.Release.log
+dotnet run --project Content.YAMLLinter/Content.YAMLLinter.csproj -c Release -- NUnit.ConsoleOut=0 > Scripts/logs/Content.YAMLLinter.Release.log
 
 echo "Tests complete. Press enter to continue."
 read
