@@ -27,6 +27,9 @@ namespace Content.Client.Lobby
         private ClientGameTicker _gameTicker = default!;
         private PvpClientSystem _pvp = default!;
 
+        // Перестаём авто-раскрывать меню режима после первого ручного клика по кнопке.
+        private bool _pvpMenuTouched;
+
         protected override Type? LinkedScreenType { get; } = typeof(LobbyGui);
         public LobbyGui? Lobby;
 
@@ -62,6 +65,7 @@ namespace Content.Client.Lobby
             Lobby.CharacterSetupButton.OnPressed += OnSetupPressed;
             Lobby.ReadyButton.OnPressed += OnReadyPressed;
             Lobby.ReadyButton.OnToggled += OnReadyToggled;
+            Lobby.PvpMenuButton.OnToggled += OnPvpMenuToggled;
             Lobby.PvpLoadout.LoadoutSelected += OnPvpLoadoutSelected;
             _pvp.LobbyStateChanged += OnPvpLobbyState;
 
@@ -83,8 +87,11 @@ namespace Content.Client.Lobby
             Lobby!.CharacterSetupButton.OnPressed -= OnSetupPressed;
             Lobby!.ReadyButton.OnPressed -= OnReadyPressed;
             Lobby!.ReadyButton.OnToggled -= OnReadyToggled;
+            Lobby!.PvpMenuButton.OnToggled -= OnPvpMenuToggled;
             Lobby!.PvpLoadout.LoadoutSelected -= OnPvpLoadoutSelected;
             _pvp.LobbyStateChanged -= OnPvpLobbyState;
+
+            _pvpMenuTouched = false;
 
             Lobby = null;
         }
@@ -208,9 +215,32 @@ namespace Content.Client.Lobby
             _pvp.SelectLoadout(random, team, classId);
         }
 
+        private void OnPvpMenuToggled(BaseButton.ButtonToggledEventArgs args)
+        {
+            _pvpMenuTouched = true;
+            Lobby?.PvpLoadout.SetOpen(args.Pressed);
+        }
+
         private void OnPvpLobbyState(Content.Shared._Grosse.Pvp.PvpLobbyStateEvent state)
         {
-            Lobby?.PvpLoadout.UpdateState(state);
+            if (Lobby == null)
+                return;
+
+            Lobby.PvpLoadout.UpdateState(state);
+
+            // Кнопка режима видна только когда PvP-лобби активно (Штрум, Контроль и т.п.).
+            Lobby.PvpMenuButton.Visible = state.Enabled;
+            Lobby.PvpMenuButton.Pressed = Lobby.PvpLoadout.Visible;
+            if (!string.IsNullOrEmpty(state.Header))
+                Lobby.PvpMenuButton.Text = state.Header;
+
+            // Пока игрок не выбрал набор, само раскрываем меню, чтобы её заметили.
+            if (state.Enabled && !state.CanReady && !_pvpMenuTouched)
+            {
+                Lobby.PvpMenuButton.Pressed = true;
+                Lobby.PvpLoadout.SetOpen(true);
+            }
+
             UpdateLobbyUi();
         }
 

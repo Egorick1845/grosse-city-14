@@ -69,9 +69,16 @@
                         <lobbyUi:LobbyCharacterPreviewPanel Name="CharacterPreview" Access="Public"
                                                            VerticalExpand="False" />
 
-                        <pvp:PvpLoadoutPanel Name="PvpLoadout" Access="Public" />
-
                         <controls:HLine StyleClasses="highlight" Thickness="2" />
+
+                        <!-- Кнопка режима (Штрум/Контроль): видна только когда PvP-лобби активно,
+                             раскрывает компактное меню предвыбора команды и класса -->
+                        <Button Name="PvpMenuButton" Access="Public" Visible="False" ToggleMode="True"
+                                Text="{Loc 'pvp-lobby-header'}"
+                                HorizontalExpand="True" HorizontalAlignment="Stretch" MinHeight="40"
+                                StyleClasses="PvpModeButton" />
+
+                        <pvp:PvpLoadoutPanel Name="PvpLoadout" Access="Public" Visible="False" />
 
                         <Button Name="CharacterSetupButton" Access="Public" Disabled="True"
                                 Text="{Loc 'ui-lobby-character-setup-button'}"

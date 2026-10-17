@@ -19,10 +19,13 @@ public sealed class LobbySheetlet<T> : Sheetlet<T> where T : PalettedStylesheet
 {
     public const string Panel = "LobbyPanel";
     public const string Scrim = "LobbyScrim";
+    public const string ModeButton = "PvpModeButton";
+    public const string MenuPanel = "PvpMenuPanel";
 
     private static readonly Color PanelBg = Color.FromHex("#222833").WithAlpha(0.90f);
     private static readonly Color PanelBorder = Color.FromHex("#4C5665").WithAlpha(0.85f);
     private static readonly Color ScrimBg = Color.FromHex("#070A0E").WithAlpha(0.30f);
+    private static readonly Color MenuBg = Color.FromHex("#161B22").WithAlpha(0.85f);
 
     public override StyleRule[] GetRules(T sheet, object config)
     {
@@ -44,6 +47,22 @@ public sealed class LobbySheetlet<T> : Sheetlet<T> where T : PalettedStylesheet
                 {
                     BackgroundColor = ScrimBg,
                     CornerRadius = 0f,
+                }),
+            // Кнопка режима (Штрум/Контроль): золотой текст как у заголовков.
+            E<ContainerButton>()
+                .Class(ModeButton)
+                .ParentOf(E<Label>())
+                .FontColor(sheet.HighlightPalette.Text),
+            // Раскрытое меню предвыбора: чуть более тёмная вкладка внутри панели лобби.
+            E<PanelContainer>()
+                .Class(MenuPanel)
+                .Panel(new RoundedStyleBox
+                {
+                    BackgroundColor = MenuBg,
+                    BorderColor = PanelBorder,
+                    BorderThickness = 1f,
+                    CornerRadius = 8f,
+                    Padding = new Thickness(8f, 6f, 8f, 6f),
                 }),
         ];
     }
