@@ -11,7 +11,7 @@
 
     <!-- Задний фон — заставка Half-Life 2 (City 17) -->
     <TextureRect Access="Public" VerticalExpand="True" HorizontalExpand="True" Name="Background"
-                 Stretch="KeepAspectCovered" TexturePath="/Textures/_Grosse/hl2_city17.jpg" />
+                 Stretch="KeepAspectCovered" TexturePath="/Textures/_Grosse/hl2_city17.png" />
 
     <!-- Затемняющая подложка, чтобы панели читались поверх фотографии -->
     <PanelContainer Name="Scrim" StyleClasses="LobbyScrim" VerticalExpand="True" HorizontalExpand="True" />
