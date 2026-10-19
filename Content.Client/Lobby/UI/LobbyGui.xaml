@@ -1,9 +1,7 @@
 <lobbyUi:LobbyGui
     xmlns="https://spacestation14.io"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:maths="clr-namespace:Robust.Shared.Maths;assembly=Robust.Shared.Maths"
     xmlns:cc="clr-namespace:Content.Client.Administration.UI.CustomControls"
-    xmlns:controls="clr-namespace:Content.Client.UserInterface.Controls"
     xmlns:lobbyUi="clr-namespace:Content.Client.Lobby.UI"
     xmlns:info="clr-namespace:Content.Client.Info"
     xmlns:widgets="clr-namespace:Content.Client.UserInterface.Systems.Chat.Widgets"
@@ -12,42 +10,52 @@
     <!-- Задний фон — заставка Half-Life 2 (City 17) -->
     <TextureRect Access="Public" VerticalExpand="True" HorizontalExpand="True" Name="Background"
                  Stretch="KeepAspectCovered" TexturePath="/Textures/_Grosse/hl2_city17.png" />
+    <TextureRect Name="BackgroundNext" VerticalExpand="True" HorizontalExpand="True"
+                 Stretch="KeepAspectCovered" Visible="False" />
 
     <!-- Затемняющая подложка, чтобы панели читались поверх фотографии -->
     <PanelContainer Name="Scrim" StyleClasses="LobbyScrim" VerticalExpand="True" HorizontalExpand="True" />
 
-    <!-- Центр экрана свободен: слева информация и чат, справа персонаж и действия -->
+    <!-- Центр экрана свободен: слева информация и чат, справа персонаж и действия.
+         Ширина панелей задаётся в LobbyGui.xaml.cs и зависит от разрешения. -->
     <BoxContainer Name="MainContainer" Orientation="Horizontal" VerticalExpand="True" HorizontalExpand="True"
                   Margin="18" SeparationOverride="18">
 
         <!-- ЛЕВАЯ панель: сервер, раунд, информация, чат, ссылки -->
-        <PanelContainer StyleClasses="LobbyPanel" MinWidth="400" MaxWidth="470" VerticalExpand="True"
+        <PanelContainer Name="LeftSide" Access="Public" StyleClasses="LobbyPanel"
+                        MinWidth="240" MaxWidth="420" VerticalExpand="True"
                         HorizontalAlignment="Left">
-            <BoxContainer Orientation="Vertical" SeparationOverride="10" Margin="14" VerticalExpand="True">
-                <Label Name="ServerName" Access="Public" StyleClasses="LabelHeadingBigger" HorizontalAlignment="Center" />
-                <controls:HLine StyleClasses="highlight" Thickness="2" />
+            <BoxContainer Orientation="Vertical" SeparationOverride="8" Margin="16 14" VerticalExpand="True">
+                <Label Name="ServerName" Access="Public" StyleClasses="LabelHeadingBigger"
+                       HorizontalAlignment="Left" />
+                <PanelContainer StyleClasses="LobbyAccent" MinHeight="2" MinWidth="44"
+                                HorizontalAlignment="Left" Margin="0 2 0 0" />
 
-                <BoxContainer Orientation="Vertical" SeparationOverride="2">
-                    <Label Name="StationTime" Access="Public" FontColorOverride="{x:Static maths:Color.LightGray}"
+                <BoxContainer Orientation="Vertical" SeparationOverride="2" Margin="0 4 0 0">
+                    <Label Name="StationTime" Access="Public" StyleClasses="LabelWeak"
                            HorizontalAlignment="Left" />
-                    <Label Name="StartTime" Access="Public" StyleClasses="LabelBig"
-                           FontColorOverride="{x:Static maths:Color.LightGray}" HorizontalAlignment="Left" />
+                    <Label Name="StartTime" Access="Public" StyleClasses="LabelBig highlight"
+                           HorizontalAlignment="Left" />
                 </BoxContainer>
 
-                <info:ServerInfo Name="ServerInfo" Access="Public" MinSize="0 30" VerticalExpand="False"
-                                 HorizontalAlignment="Stretch" />
+                <ScrollContainer Name="InfoScroll" Access="Public" VerticalExpand="False"
+                                 HorizontalExpand="True" MaxHeight="240" ReturnMeasure="True"
+                                 HScrollEnabled="False" ReserveScrollbarSpace="True">
+                    <info:ServerInfo Name="ServerInfo" Access="Public" MinSize="0 30"
+                                     VerticalExpand="False" HorizontalAlignment="Stretch" />
+                </ScrollContainer>
 
                 <!-- Хост для попапов активных голосований (кнопка вызова голосования убрана) -->
                 <BoxContainer Name="VoteContainer" Access="Public" Orientation="Vertical" SeparationOverride="4"
                               HorizontalAlignment="Left" VerticalExpand="False" />
 
-                <controls:HLine StyleClasses="highlight" Thickness="2" />
+                <PanelContainer StyleClasses="LobbyDivider" MinHeight="1" Margin="0 4" />
 
                 <!-- Чат: MinWidth снят, иначе он шире панели -->
                 <widgets:ChatBox Name="Chat" Access="Public" VerticalExpand="True" HorizontalExpand="True"
-                                 Margin="0" MinWidth="0" MinHeight="120" />
+                                 Margin="0" MinWidth="0" MinHeight="110" />
 
-                <controls:HLine StyleClasses="highlight" Thickness="2" />
+                <PanelContainer StyleClasses="LobbyDivider" MinHeight="1" Margin="0 4" />
 
                 <!-- Правила / руководство / обновления -->
                 <info:LinkBanner Name="LinkBanner" Access="Public" VerticalExpand="False" />
@@ -58,63 +66,100 @@
         <Control HorizontalExpand="True" />
 
         <!-- ПРАВАЯ панель: карточка персонажа и ровная колонка кнопок -->
-        <PanelContainer Name="RightSide" Access="Public" StyleClasses="LobbyPanel" MinWidth="420" MaxWidth="900"
-                        HorizontalExpand="False" HorizontalAlignment="Right" VerticalExpand="True">
-            <BoxContainer Orientation="Vertical" Margin="14" VerticalExpand="True">
+        <PanelContainer Name="RightSide" Access="Public" StyleClasses="LobbyPanel"
+                        MinWidth="280" MaxWidth="1200" HorizontalExpand="False"
+                        HorizontalAlignment="Right" VerticalExpand="True">
+            <BoxContainer Orientation="Vertical" Margin="14" VerticalExpand="True" HorizontalExpand="True">
 
                 <!-- Состояние по умолчанию: карточка персонажа -->
                 <Control Name="DefaultState" VerticalExpand="True">
-                    <BoxContainer Orientation="Vertical" VerticalExpand="True" SeparationOverride="10">
+                    <BoxContainer Orientation="Vertical" VerticalExpand="True" SeparationOverride="8">
 
-                        <lobbyUi:LobbyCharacterPreviewPanel Name="CharacterPreview" Access="Public"
-                                                           VerticalExpand="False" />
+                        <!-- Верхняя часть прокручивается, если экран низкий или раскрыто PvP-меню.
+                             Кнопки действий всегда остаются внизу. -->
+                        <ScrollContainer Name="ProfileScroll" VerticalExpand="True" HorizontalExpand="True"
+                                         HScrollEnabled="False" ReserveScrollbarSpace="True">
+                            <BoxContainer Orientation="Vertical" SeparationOverride="8"
+                                          HorizontalExpand="True" Margin="0 0 4 0">
 
-                        <controls:HLine StyleClasses="highlight" Thickness="2" />
+                                <BoxContainer Name="PreviewBlock" Access="Public" Orientation="Vertical"
+                                              SeparationOverride="8" HorizontalExpand="True">
+                                    <lobbyUi:LobbyCharacterPreviewPanel Name="CharacterPreview" Access="Public"
+                                                                       VerticalExpand="False" />
+                                    <PanelContainer StyleClasses="LobbyDivider" MinHeight="1" />
+                                </BoxContainer>
 
-                        <!-- Кнопка режима (Штрум/Контроль): видна только когда PvP-лобби активно,
-                             раскрывает компактное меню предвыбора команды и класса -->
-                        <Button Name="PvpMenuButton" Access="Public" Visible="False" ToggleMode="True"
-                                Text="{Loc 'pvp-lobby-header'}"
-                                HorizontalExpand="True" HorizontalAlignment="Stretch" MinHeight="40"
-                                StyleClasses="PvpModeButton" />
+                                <Button Name="CharacterSetupButton" Access="Public" Disabled="True"
+                                        Text="{Loc 'ui-lobby-character-setup-button'}"
+                                        HorizontalExpand="True" HorizontalAlignment="Stretch" MinHeight="36" />
 
-                        <pvp:PvpLoadoutPanel Name="PvpLoadout" Access="Public" Visible="False" />
+                                <!-- Карточка режима: заголовок всегда виден и показывает выбранный набор,
+                                     тело раскрывается по клику. -->
+                                <BoxContainer Name="PvpCard" Access="Public" Orientation="Vertical"
+                                              Visible="False" SeparationOverride="4" HorizontalExpand="True">
+                                    <Button Name="PvpMenuButton" Access="Public" ToggleMode="True"
+                                            HorizontalExpand="True" HorizontalAlignment="Stretch" MinHeight="48">
+                                        <BoxContainer Orientation="Horizontal" HorizontalExpand="True"
+                                                      Margin="6 1 2 1" SeparationOverride="6">
+                                            <BoxContainer Orientation="Vertical" HorizontalExpand="True"
+                                                          VerticalAlignment="Center" SeparationOverride="1">
+                                                <Label Name="PvpMenuTitle" Access="Public"
+                                                       Text="{Loc 'pvp-lobby-header'}"
+                                                       StyleClasses="LabelHeading" />
+                                                <Label Name="PvpMenuSummary" Access="Public"
+                                                       Text="{Loc 'pvp-lobby-summary-empty'}"
+                                                       StyleClasses="LabelWeak" />
+                                            </BoxContainer>
+                                            <Label Name="PvpMenuChevron" Access="Public" Text="+"
+                                                   StyleClasses="LabelHeading" VerticalAlignment="Center"
+                                                   Margin="4 0 2 0" />
+                                        </BoxContainer>
+                                    </Button>
 
-                        <Button Name="CharacterSetupButton" Access="Public" Disabled="True"
-                                Text="{Loc 'ui-lobby-character-setup-button'}"
-                                HorizontalExpand="True" HorizontalAlignment="Stretch" MinHeight="40" />
+                                    <pvp:PvpLoadoutPanel Name="PvpLoadout" Access="Public" Visible="False" />
+                                </BoxContainer>
+                            </BoxContainer>
+                        </ScrollContainer>
 
-                        <!-- Растяжка: прижимает блок действий к низу панели -->
-                        <Control VerticalExpand="True" MinHeight="10" />
+                        <!-- Нижний блок действий: постоянная высота, не уезжает за экран -->
+                        <PanelContainer StyleClasses="LobbyActionDock">
+                            <BoxContainer Orientation="Vertical" SeparationOverride="6"
+                                          HorizontalExpand="True">
+                                <Button Name="ReadyButton" Access="Public" ToggleMode="True"
+                                        Text="{Loc 'ui-lobby-ready-up-button'}"
+                                        HorizontalExpand="True" HorizontalAlignment="Stretch" MinHeight="44" />
 
-                        <controls:HLine StyleClasses="highlight" Thickness="2" />
+                                <cc:UICommandButton Command="observe" Name="ObserveButton" Access="Public"
+                                                    Text="{Loc 'ui-lobby-observe-button'}"
+                                                    HorizontalExpand="True" HorizontalAlignment="Stretch"
+                                                    MinHeight="34"
+                                                    WindowType="{x:Type lobbyUi:ObserveWarningWindow}" />
 
-                        <!-- Все кнопки одинаковой ширины и высоты, в один ровный столбик -->
-                        <Button Name="ReadyButton" Access="Public" ToggleMode="True"
-                                Text="{Loc 'ui-lobby-ready-up-button'}"
-                                HorizontalExpand="True" HorizontalAlignment="Stretch" MinHeight="40" />
+                                <BoxContainer Orientation="Horizontal" SeparationOverride="6"
+                                              HorizontalExpand="True">
+                                    <Button Name="OptionsButton" Access="Public"
+                                            Text="{Loc 'ui-lobby-options-button'}"
+                                            HorizontalExpand="True" HorizontalAlignment="Stretch"
+                                            MinHeight="34" />
+                                    <Button Name="AHelpButton" Access="Public"
+                                            Text="{Loc 'ui-lobby-ahelp-button'}"
+                                            HorizontalExpand="True" HorizontalAlignment="Stretch"
+                                            MinHeight="34" />
+                                </BoxContainer>
 
-                        <cc:UICommandButton Command="observe" Name="ObserveButton" Access="Public"
-                                            Text="{Loc 'ui-lobby-observe-button'}"
-                                            HorizontalExpand="True" HorizontalAlignment="Stretch" MinHeight="40"
-                                            WindowType="{x:Type lobbyUi:ObserveWarningWindow}" />
-
-                        <Button Name="OptionsButton" Access="Public" Text="{Loc 'ui-lobby-options-button'}"
-                                HorizontalExpand="True" HorizontalAlignment="Stretch" MinHeight="40" />
-
-                        <Button Name="AHelpButton" Access="Public" Text="{Loc 'ui-lobby-ahelp-button'}"
-                                HorizontalExpand="True" HorizontalAlignment="Stretch" MinHeight="40" />
-
-                        <controls:HLine StyleClasses="highlight" Thickness="2" />
-
-                        <Button Name="LeaveButton" Access="Public" Text="{Loc 'ui-lobby-leave-button'}"
-                                StyleClasses="negative"
-                                HorizontalExpand="True" HorizontalAlignment="Stretch" MinHeight="40" />
+                                <Button Name="LeaveButton" Access="Public"
+                                        Text="{Loc 'ui-lobby-leave-button'}"
+                                        StyleClasses="negative"
+                                        HorizontalExpand="True" HorizontalAlignment="Stretch"
+                                        MinHeight="34" />
+                            </BoxContainer>
+                        </PanelContainer>
                     </BoxContainer>
                 </Control>
 
                 <!-- Состояние редактирования: редактор персонажа -->
-                <Control Name="CharacterSetupState" Access="Public" Visible="False" VerticalExpand="True" />
+                <Control Name="CharacterSetupState" Access="Public" Visible="False"
+                         VerticalExpand="True" HorizontalExpand="True" />
             </BoxContainer>
         </PanelContainer>
     </BoxContainer>

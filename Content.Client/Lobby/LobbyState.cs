@@ -5,6 +5,7 @@ using Content.Client.Lobby.UI;
 using Content.Client.UserInterface.Systems.Chat;
 using Content.Client.Voting;
 using Content.Shared.CCVar;
+using Content.Shared._Grosse.Pvp;
 using Robust.Client;
 using Robust.Client.Console;
 using Robust.Client.UserInterface;
@@ -67,6 +68,8 @@ namespace Content.Client.Lobby
             Lobby.ReadyButton.OnToggled += OnReadyToggled;
             Lobby.PvpMenuButton.OnToggled += OnPvpMenuToggled;
             Lobby.PvpLoadout.LoadoutSelected += OnPvpLoadoutSelected;
+            Lobby.PvpLoadout.SummaryChanged += OnPvpSummaryChanged;
+            Lobby.PvpLoadout.CollapseRequested += OnPvpCollapseRequested;
             _pvp.LobbyStateChanged += OnPvpLobbyState;
 
             _gameTicker.InfoBlobUpdated += UpdateLobbyUi;
@@ -89,6 +92,8 @@ namespace Content.Client.Lobby
             Lobby!.ReadyButton.OnToggled -= OnReadyToggled;
             Lobby!.PvpMenuButton.OnToggled -= OnPvpMenuToggled;
             Lobby!.PvpLoadout.LoadoutSelected -= OnPvpLoadoutSelected;
+            Lobby!.PvpLoadout.SummaryChanged -= OnPvpSummaryChanged;
+            Lobby!.PvpLoadout.CollapseRequested -= OnPvpCollapseRequested;
             _pvp.LobbyStateChanged -= OnPvpLobbyState;
 
             _pvpMenuTouched = false;
@@ -218,7 +223,29 @@ namespace Content.Client.Lobby
         private void OnPvpMenuToggled(BaseButton.ButtonToggledEventArgs args)
         {
             _pvpMenuTouched = true;
-            Lobby?.PvpLoadout.SetOpen(args.Pressed);
+            if (Lobby == null)
+                return;
+
+            Lobby.PvpLoadout.SetOpen(args.Pressed);
+            Lobby.PvpMenuChevron.Text = args.Pressed ? "-" : "+";
+        }
+
+        private void OnPvpSummaryChanged(string summary)
+        {
+            if (Lobby != null)
+                Lobby.PvpMenuSummary.Text = summary;
+        }
+
+        private void OnPvpCollapseRequested()
+        {
+            _pvpMenuTouched = true;
+            if (Lobby == null)
+                return;
+
+            Lobby.PvpLoadout.SetOpen(false);
+            if (Lobby.PvpMenuButton.Pressed)
+                Lobby.PvpMenuButton.Pressed = false;
+            Lobby.PvpMenuChevron.Text = "+";
         }
 
         private void OnPvpLobbyState(Content.Shared._Grosse.Pvp.PvpLobbyStateEvent state)
@@ -228,17 +255,19 @@ namespace Content.Client.Lobby
 
             Lobby.PvpLoadout.UpdateState(state);
 
-            // Кнопка режима видна только когда PvP-лобби активно (Штрум, Контроль и т.п.).
+            // Карточка режима видна только когда PvP-лобби активно (Штурм, Контроль и т.п.).
+            Lobby.PvpCard.Visible = state.Enabled;
             Lobby.PvpMenuButton.Visible = state.Enabled;
             Lobby.PvpMenuButton.Pressed = Lobby.PvpLoadout.Visible;
             if (!string.IsNullOrEmpty(state.Header))
-                Lobby.PvpMenuButton.Text = state.Header;
+                Lobby.PvpMenuTitle.Text = state.Header;
 
             // Пока игрок не выбрал набор, само раскрываем меню, чтобы её заметили.
             if (state.Enabled && !state.CanReady && !_pvpMenuTouched)
             {
                 Lobby.PvpMenuButton.Pressed = true;
                 Lobby.PvpLoadout.SetOpen(true);
+                Lobby.PvpMenuChevron.Text = "-";
             }
 
             UpdateLobbyUi();
