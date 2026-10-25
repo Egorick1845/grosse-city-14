@@ -31,9 +31,9 @@ namespace Content.Client.Lobby.UI
         private static readonly string[] LobbyBackgrounds =
         {
             "/Textures/_Grosse/hl2_city17.png",
-            "/Textures/_Grosse/hl2_lobby_dusk.jpg",
-            "/Textures/_Grosse/hl2_lobby_rain.jpg",
-            "/Textures/_Grosse/hl2_lobby_combine.jpg",
+            "/Textures/_Grosse/hl2_lobby_dusk.png",
+            "/Textures/_Grosse/hl2_lobby_rain.png",
+            "/Textures/_Grosse/hl2_lobby_combine.png",
         };
 
         private LobbyGuiState _state = LobbyGuiState.Default;
